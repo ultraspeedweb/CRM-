@@ -1,0 +1,3 @@
+import { KeyRound, Languages, ShieldCheck, UsersRound } from "lucide-react";
+import { PageHeader } from "@/components/page-header";
+export default function SettingsPage(){const items=[[UsersRound,"الفريق والأدوار","Owner · Admin · Manager · Agent · Viewer"],[Languages,"اللغات","العربية · Türkçe · English"],[ShieldCheck,"الحماية","RLS وعزل المؤسسات مفعّلان"],[KeyRound,"التكاملات","المفاتيح السرية تبقى على الخادم"]] as const;return <main className="content"><PageHeader title="الإعدادات" subtitle="إدارة مساحة العمل بدون المساس بالمشاريع الأخرى."/><section className="settings-grid">{items.map(([Icon,title,text])=><article className="panel setting-card" key={title}><Icon size={22}/><div><h2>{title}</h2><p>{text}</p></div></article>)}</section></main>}
