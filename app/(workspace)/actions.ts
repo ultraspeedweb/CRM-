@@ -95,3 +95,20 @@ export async function sendWhatsAppMessage(formData: FormData) {
   revalidatePath("/conversations");
   redirect("/conversations?success=تم إرسال الرسالة");
 }
+
+export async function completeFollowUp(formData: FormData) {
+  const { supabase, organizationId } = await requireWorkspace();
+  const followUpId = String(formData.get("followUpId") ?? "").trim();
+  if (!/^[0-9a-f-]{36}$/i.test(followUpId)) redirect("/follow-ups?error=معرّف المتابعة غير صالح");
+
+  const { error } = await supabase
+    .from("follow_ups")
+    .update({ status: "completed", completed_at: new Date().toISOString() })
+    .eq("organization_id", organizationId)
+    .eq("id", followUpId)
+    .in("status", ["pending", "in_progress"]);
+  if (error) redirect("/follow-ups?error=تعذر إكمال المتابعة");
+  revalidatePath("/follow-ups");
+  revalidatePath("/dashboard");
+  redirect("/follow-ups?success=تم إكمال المتابعة");
+}

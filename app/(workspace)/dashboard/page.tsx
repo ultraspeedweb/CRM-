@@ -7,18 +7,20 @@ const statusLabel: Record<string, string> = { new: "جديد", contacted: "تم 
 
 export default async function DashboardPage() {
   const { supabase, organizationId: orgId } = await requireWorkspace();
-  const [leadsCount, qualifiedCount, openConversations, pipeline, recentLeads, upcoming] = await Promise.all([
+  const [leadsCount, qualifiedCount, openConversations, pipeline, recentLeads, upcoming, overdueFollowUps] = await Promise.all([
     supabase.from("leads").select("id", { count: "exact", head: true }).eq("organization_id", orgId),
     supabase.from("leads").select("id", { count: "exact", head: true }).eq("organization_id", orgId).in("status", ["qualified", "appointment", "negotiation"]),
     supabase.from("conversations").select("id", { count: "exact", head: true }).eq("organization_id", orgId).eq("status", "open"),
     supabase.from("deals").select("amount").eq("organization_id", orgId).neq("stage", "lost"),
     supabase.from("leads").select("id, full_name, status, score, source_channel, created_at").eq("organization_id", orgId).order("created_at", { ascending: false }).limit(6),
     supabase.from("appointments").select("id, title, starts_at, status, leads(full_name)").eq("organization_id", orgId).gte("starts_at", new Date().toISOString()).order("starts_at").limit(4),
+    supabase.from("follow_ups").select("id", { count: "exact", head: true }).eq("organization_id", orgId).in("status", ["pending", "in_progress"]).lt("due_at", new Date().toISOString()),
   ]);
   const pipelineTotal = (pipeline.data ?? []).reduce((sum, item) => sum + Number(item.amount ?? 0), 0);
   const metrics = [
     ["إجمالي العملاء", leadsCount.count ?? 0, "هذا الشهر", UsersRound, "blue"],
     ["عملاء مؤهلون", qualifiedCount.count ?? 0, "جاهزون للمتابعة", TrendingUp, "green"],
+    ["متابعات متأخرة", overdueFollowUps.count ?? 0, "فرص تحتاج إنقاذ", CalendarClock, "amber"],
     ["محادثات مفتوحة", openConversations.count ?? 0, "تحتاج ردًا", MessageCircleMore, "violet"],
     ["قيمة المسار", `${Intl.NumberFormat("ar", { notation: "compact" }).format(pipelineTotal)} ₺`, "الصفقات النشطة", CircleDollarSign, "amber"],
   ] as const;
