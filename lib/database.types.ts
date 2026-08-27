@@ -1140,6 +1140,59 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_connections: {
+        Row: {
+          access_token_env_key: string | null
+          created_at: string
+          created_by: string | null
+          display_name: string | null
+          display_phone_number: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          phone_number_id: string
+          status: string
+          updated_at: string
+          whatsapp_business_account_id: string | null
+        }
+        Insert: {
+          access_token_env_key?: string | null
+          created_at?: string
+          created_by?: string | null
+          display_name?: string | null
+          display_phone_number?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          phone_number_id: string
+          status?: string
+          updated_at?: string
+          whatsapp_business_account_id?: string | null
+        }
+        Update: {
+          access_token_env_key?: string | null
+          created_at?: string
+          created_by?: string | null
+          display_name?: string | null
+          display_phone_number?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          phone_number_id?: string
+          status?: string
+          updated_at?: string
+          whatsapp_business_account_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_connections_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -1349,4 +1402,3 @@ export const Constants = {
     Enums: {},
   },
 } as const
-

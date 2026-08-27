@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { extractWhatsAppEvents, verifyMetaSignature } from "@/lib/whatsapp";
+import { buildWhatsAppThreadId, extractWhatsAppEvents, verifyMetaSignature } from "@/lib/whatsapp";
 
 export const runtime = "nodejs";
 
@@ -14,10 +14,8 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const appSecret = process.env.META_APP_SECRET;
-  const organizationId = process.env.SATISDESK_ORGANIZATION_ID;
-  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
   const rawBody = await request.text();
-  if (!appSecret || !organizationId || !phoneNumberId) return new Response("Connector not configured", { status: 503 });
+  if (!appSecret || !process.env.SUPABASE_SECRET_KEY) return new Response("Connector not configured", { status: 503 });
   if (!verifyMetaSignature(rawBody, request.headers.get("x-hub-signature-256"), appSecret)) return new Response("Invalid signature", { status: 401 });
 
   let payload: unknown;
@@ -25,7 +23,18 @@ export async function POST(request: Request) {
   const supabase = createAdminClient();
 
   for (const event of extractWhatsAppEvents(payload)) {
-    if (event.metadata?.phone_number_id !== phoneNumberId) continue;
+    const phoneNumberId = event.metadata?.phone_number_id;
+    if (!phoneNumberId) continue;
+
+    const { data: connection, error: connectionError } = await supabase
+      .from("whatsapp_connections")
+      .select("organization_id")
+      .eq("phone_number_id", phoneNumberId)
+      .eq("status", "active")
+      .maybeSingle();
+    if (connectionError) return new Response("Connection lookup failed", { status: 500 });
+    if (!connection) continue;
+    const organizationId = connection.organization_id;
 
     for (const status of event.statuses ?? []) {
       const mapped = ["sent", "delivered", "read", "failed"].includes(status.status) ? status.status : "sent";
@@ -36,6 +45,7 @@ export async function POST(request: Request) {
       const waId = message.from;
       const contactName = event.contacts?.find((contact) => contact.wa_id === waId)?.profile?.name || `WhatsApp ${waId.slice(-4)}`;
       const externalRef = `whatsapp:${waId}`;
+      const externalThreadId = buildWhatsAppThreadId(phoneNumberId, waId);
       let { data: lead } = await supabase.from("leads").select("id").eq("organization_id", organizationId).eq("external_ref", externalRef).maybeSingle();
       if (!lead) {
         const created = await supabase.from("leads").insert({ organization_id: organizationId, full_name: contactName, phone: waId, whatsapp_phone: waId, external_ref: externalRef, source_channel: "whatsapp", preferred_language: "unknown" }).select("id").single();
@@ -43,9 +53,9 @@ export async function POST(request: Request) {
       }
       if (!lead) continue;
 
-      let { data: conversation } = await supabase.from("conversations").select("id").eq("organization_id", organizationId).eq("channel", "whatsapp").eq("external_thread_id", waId).maybeSingle();
+      let { data: conversation } = await supabase.from("conversations").select("id").eq("organization_id", organizationId).eq("channel", "whatsapp").eq("external_thread_id", externalThreadId).maybeSingle();
       if (!conversation) {
-        const created = await supabase.from("conversations").insert({ organization_id: organizationId, lead_id: lead.id, channel: "whatsapp", external_thread_id: waId, handling_mode: "human", last_message_at: new Date(Number(message.timestamp ?? 0) * 1000).toISOString(), unread_count: 1 }).select("id").single();
+        const created = await supabase.from("conversations").insert({ organization_id: organizationId, lead_id: lead.id, channel: "whatsapp", external_thread_id: externalThreadId, handling_mode: "human", last_message_at: new Date(Number(message.timestamp ?? 0) * 1000).toISOString(), unread_count: 1 }).select("id").single();
         conversation = created.data;
       } else {
         await supabase.from("conversations").update({ status: "open", last_message_at: new Date(Number(message.timestamp ?? 0) * 1000).toISOString(), unread_count: 1 }).eq("organization_id", organizationId).eq("id", conversation.id);

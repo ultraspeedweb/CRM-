@@ -1,6 +1,8 @@
 import { Languages, MessageCircleMore, Send, WifiOff } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { requireWorkspace } from "@/lib/workspace";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { resolveWhatsAppAccessToken } from "@/lib/whatsapp";
 import { sendWhatsAppMessage } from "../actions";
 
 type Props = { searchParams: Promise<{ error?: string; success?: string }> };
@@ -9,7 +11,12 @@ export default async function ConversationsPage({ searchParams }: Props) {
   const params = await searchParams;
   const { supabase, organizationId } = await requireWorkspace();
   const { data } = await supabase.from("conversations").select("id, channel, status, customer_language, summary, unread_count, last_message_at, leads(full_name)").eq("organization_id", organizationId).order("last_message_at", { ascending: false, nullsFirst: false });
-  const whatsappReady = Boolean(process.env.WHATSAPP_PHONE_NUMBER_ID && process.env.WHATSAPP_ACCESS_TOKEN && process.env.META_APP_SECRET && process.env.WHATSAPP_VERIFY_TOKEN && process.env.SUPABASE_SECRET_KEY);
+  let whatsappReady = false;
+  if (process.env.META_APP_SECRET && process.env.WHATSAPP_VERIFY_TOKEN && process.env.SUPABASE_SECRET_KEY) {
+    const admin = createAdminClient();
+    const { data: connections } = await admin.from("whatsapp_connections").select("access_token_env_key").eq("organization_id", organizationId).eq("status", "active");
+    whatsappReady = Boolean(connections?.some((connection) => resolveWhatsAppAccessToken(connection.access_token_env_key)));
+  }
 
   return <main className="content"><PageHeader title="المحادثات" subtitle="صندوق واحد لواتساب، الويب والقنوات الاجتماعية مع ترجمة محفوظة." />
     {params.error && <div className="alert error">{params.error}</div>}{params.success && <div className="alert success">{params.success}</div>}

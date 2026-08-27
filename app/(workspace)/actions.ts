@@ -3,8 +3,10 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requireWorkspace } from "@/lib/workspace";
 import { parseAppointmentInput, parseDealInput, parseFollowUpInput, parseLeadInput } from "@/lib/validation";
+import { getPhoneNumberIdFromThreadId, resolveWhatsAppAccessToken } from "@/lib/whatsapp";
 
 export async function signOut() {
   const supabase = await createClient();
@@ -70,15 +72,22 @@ export async function sendWhatsAppMessage(formData: FormData) {
   const body = String(formData.get("body") ?? "").trim().slice(0, 4096);
   if (!/^[0-9a-f-]{36}$/i.test(conversationId) || !body) redirect("/conversations?error=اكتب رسالة صالحة");
 
-  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
-  const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
   const graphVersion = process.env.WHATSAPP_GRAPH_VERSION || "v25.0";
-  if (!phoneNumberId || !accessToken || !/^v\d+\.\d+$/.test(graphVersion)) redirect("/conversations?error=ربط WhatsApp غير مكتمل");
+  if (!process.env.SUPABASE_SECRET_KEY || !/^v\d+\.\d+$/.test(graphVersion)) redirect("/conversations?error=ربط WhatsApp غير مكتمل");
 
-  const { data: conversation } = await supabase.from("conversations").select("id, channel, leads(whatsapp_phone,phone)").eq("organization_id", organizationId).eq("id", conversationId).single();
+  const { data: conversation } = await supabase.from("conversations").select("id, channel, external_thread_id, leads(whatsapp_phone,phone)").eq("organization_id", organizationId).eq("id", conversationId).single();
   const lead = Array.isArray(conversation?.leads) ? conversation.leads[0] : conversation?.leads;
   const recipient = lead?.whatsapp_phone || lead?.phone;
   if (!conversation || conversation.channel !== "whatsapp" || !recipient) redirect("/conversations?error=لا يوجد رقم WhatsApp صالح لهذا العميل");
+
+  const admin = createAdminClient();
+  const routedPhoneNumberId = getPhoneNumberIdFromThreadId(conversation.external_thread_id);
+  let connectionQuery = admin.from("whatsapp_connections").select("phone_number_id, access_token_env_key").eq("organization_id", organizationId).eq("status", "active");
+  if (routedPhoneNumberId) connectionQuery = connectionQuery.eq("phone_number_id", routedPhoneNumberId);
+  const { data: connection } = await connectionQuery.order("updated_at", { ascending: false }).limit(1).maybeSingle();
+  const phoneNumberId = connection?.phone_number_id;
+  const accessToken = resolveWhatsAppAccessToken(connection?.access_token_env_key);
+  if (!phoneNumberId || !accessToken) redirect("/conversations?error=ربط WhatsApp غير مكتمل لهذه المؤسسة");
 
   const response = await fetch(`https://graph.facebook.com/${graphVersion}/${phoneNumberId}/messages`, {
     method: "POST",
