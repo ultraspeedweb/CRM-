@@ -25,12 +25,11 @@ export default async function DealsPage({ searchParams }: Props) {
 
   return <main className="content"><PageHeader title="الصفقات" subtitle="مسار بصري من التأهيل حتى الإغلاق، مع نتيجة واضحة لكل صفقة." />
     {params.error && <div className="alert error">{params.error}</div>}{params.success && <div className="alert success">{params.success}</div>}
-    <section className="panel deal-create"><div className="panel-head"><div><h2>صفقة جديدة</h2><p>حوّل العميل المؤهل إلى قيمة داخل المسار</p></div><Plus size={20} /></div><form className="inline-form" action={createDeal}>
+    <section className="panel deal-create"><div className="panel-head"><div><h2>صفقة جديدة</h2><p>كل صفقة تبدأ من التأهيل ثم تتحرك للأمام فقط</p></div><Plus size={20} /></div><form className="inline-form" action={createDeal}>
       <select name="leadId" required defaultValue=""><option value="" disabled>العميل</option>{(leads.data ?? []).map((lead) => <option key={lead.id} value={lead.id}>{lead.full_name}</option>)}</select>
       <input name="title" required placeholder="عنوان الصفقة" />
       <input name="amount" type="number" min="0" step="0.01" required placeholder="القيمة" />
       <select name="currency" defaultValue="TRY"><option>TRY</option><option>USD</option><option>EUR</option></select>
-      <select name="stage" defaultValue="qualification"><option value="qualification">تأهيل</option><option value="proposal">عرض</option><option value="negotiation">تفاوض</option><option value="won">مغلقة رابحة</option></select>
       <input name="probability" type="number" min="0" max="100" defaultValue="20" aria-label="احتمال الإغلاق" />
       <button className="primary-button" type="submit" disabled={!leads.data?.length}>إضافة</button>
     </form></section>
