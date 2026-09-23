@@ -111,11 +111,10 @@ export function parseDealInput(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim().slice(0, 200);
   const amount = Number(formData.get("amount") ?? 0);
   const currency = String(formData.get("currency") ?? "TRY").toUpperCase();
-  const stage = String(formData.get("stage") ?? "qualification");
   const probability = Number(formData.get("probability") ?? 20);
   if (!uuidPattern.test(leadId) || !title || !Number.isFinite(amount) || amount < 0 || !/^[A-Z]{3}$/.test(currency)) return null;
-  if (!["qualification", "proposal", "negotiation", "won"].includes(stage) || !Number.isInteger(probability) || probability < 0 || probability > 100) return null;
-  return { leadId, title, amount, currency, stage, probability };
+  if (!Number.isInteger(probability) || probability < 0 || probability > 100) return null;
+  return { leadId, title, amount, currency, stage: "qualification" as const, probability };
 }
 
 export function parseDealStageUpdate(formData: FormData) {
