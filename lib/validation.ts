@@ -1,6 +1,43 @@
 const leadSources = new Set(["manual", "whatsapp", "web", "instagram", "facebook", "referral"]);
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+const dealStages = ["qualification", "proposal", "negotiation", "won", "lost"] as const;
+const appointmentStatuses = ["scheduled", "confirmed", "completed", "cancelled", "no_show"] as const;
+export type DealStage = (typeof dealStages)[number];
+export type AppointmentStatus = (typeof appointmentStatuses)[number];
+
+const dealTransitions: Record<DealStage, readonly DealStage[]> = {
+  qualification: ["proposal", "lost"],
+  proposal: ["negotiation", "lost"],
+  negotiation: ["won", "lost"],
+  won: [],
+  lost: [],
+};
+
+const appointmentTransitions: Record<AppointmentStatus, readonly AppointmentStatus[]> = {
+  scheduled: ["confirmed", "cancelled"],
+  confirmed: ["completed", "cancelled", "no_show"],
+  completed: [],
+  cancelled: [],
+  no_show: [],
+};
+
+function isDealStage(value: string): value is DealStage {
+  return (dealStages as readonly string[]).includes(value);
+}
+
+function isAppointmentStatus(value: string): value is AppointmentStatus {
+  return (appointmentStatuses as readonly string[]).includes(value);
+}
+
+export function canTransitionDealStage(from: string, to: string) {
+  return isDealStage(from) && isDealStage(to) && dealTransitions[from].includes(to);
+}
+
+export function canTransitionAppointmentStatus(from: string, to: string) {
+  return isAppointmentStatus(from) && isAppointmentStatus(to) && appointmentTransitions[from].includes(to);
+}
+
 export type LeadInput = {
   fullName: string;
   phone: string;
@@ -60,6 +97,15 @@ export function parseAppointmentInput(formData: FormData) {
   return { leadId, title, startsAt: startsAt.toISOString(), endsAt: new Date(startsAt.getTime() + durationMinutes * 60_000).toISOString(), location };
 }
 
+export function parseAppointmentStatusUpdate(formData: FormData) {
+  const appointmentId = String(formData.get("appointmentId") ?? "").trim();
+  const status = String(formData.get("status") ?? "").trim();
+  const cancellationReason = String(formData.get("cancellationReason") ?? "").trim().slice(0, 500);
+  if (!uuidPattern.test(appointmentId) || !isAppointmentStatus(status)) return null;
+  if (status === "cancelled" && cancellationReason.length < 2) return null;
+  return { appointmentId, status, cancellationReason: status === "cancelled" ? cancellationReason : null };
+}
+
 export function parseDealInput(formData: FormData) {
   const leadId = String(formData.get("leadId") ?? "").trim();
   const title = String(formData.get("title") ?? "").trim().slice(0, 200);
@@ -70,4 +116,15 @@ export function parseDealInput(formData: FormData) {
   if (!uuidPattern.test(leadId) || !title || !Number.isFinite(amount) || amount < 0 || !/^[A-Z]{3}$/.test(currency)) return null;
   if (!["qualification", "proposal", "negotiation", "won"].includes(stage) || !Number.isInteger(probability) || probability < 0 || probability > 100) return null;
   return { leadId, title, amount, currency, stage, probability };
+}
+
+export function parseDealStageUpdate(formData: FormData) {
+  const dealId = String(formData.get("dealId") ?? "").trim();
+  const stage = String(formData.get("stage") ?? "").trim();
+  const probability = Number(formData.get("probability") ?? 20);
+  const lostReason = String(formData.get("lostReason") ?? "").trim().slice(0, 500);
+  if (!uuidPattern.test(dealId) || !isDealStage(stage)) return null;
+  if (!Number.isInteger(probability) || probability < 0 || probability > 100) return null;
+  if (stage === "lost" && lostReason.length < 2) return null;
+  return { dealId, stage, probability, lostReason: stage === "lost" ? lostReason : null };
 }
