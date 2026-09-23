@@ -26,6 +26,8 @@ jobs:
       - run: npm ci
       - name: Upgrade patched Next.js and refresh lockfile
         run: npm install --save-exact next@16.3.6 eslint-config-next@16.3.6
+      - name: Apply non-breaking audit fix
+        run: npm audit fix
       - name: Dependency security gate
         run: npm audit --audit-level=high
       - name: Canonical quality gate
