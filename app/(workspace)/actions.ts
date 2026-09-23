@@ -95,9 +95,10 @@ export async function updateDealStage(formData: FormData) {
     .update({ stage: input.stage, probability, lost_reason: input.lostReason })
     .eq("organization_id", organizationId)
     .eq("id", input.dealId)
+    .eq("stage", current.stage)
     .select("id")
     .maybeSingle();
-  if (error || !updated) redirect("/deals?error=تعذر تحديث مرحلة الصفقة");
+  if (error || !updated) redirect("/deals?error=تعذر تحديث مرحلة الصفقة؛ أعد تحميل الصفحة وحاول مجددًا");
   revalidatePath("/deals");
   revalidatePath("/leads");
   revalidatePath("/dashboard");
@@ -123,9 +124,10 @@ export async function updateAppointmentStatus(formData: FormData) {
     .update({ status: input.status, cancellation_reason: input.cancellationReason })
     .eq("organization_id", organizationId)
     .eq("id", input.appointmentId)
+    .eq("status", current.status)
     .select("id")
     .maybeSingle();
-  if (error || !updated) redirect("/appointments?error=تعذر تحديث حالة الموعد");
+  if (error || !updated) redirect("/appointments?error=تعذر تحديث حالة الموعد؛ أعد تحميل الصفحة وحاول مجددًا");
   revalidatePath("/appointments");
   revalidatePath("/leads");
   revalidatePath("/dashboard");
