@@ -5,7 +5,16 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireWorkspace } from "@/lib/workspace";
-import { parseAppointmentInput, parseDealInput, parseFollowUpInput, parseLeadInput } from "@/lib/validation";
+import {
+  canTransitionAppointmentStatus,
+  canTransitionDealStage,
+  parseAppointmentInput,
+  parseAppointmentStatusUpdate,
+  parseDealInput,
+  parseDealStageUpdate,
+  parseFollowUpInput,
+  parseLeadInput,
+} from "@/lib/validation";
 import { getPhoneNumberIdFromThreadId, resolveWhatsAppAccessToken } from "@/lib/whatsapp";
 
 export async function signOut() {
@@ -64,6 +73,63 @@ export async function createDeal(formData: FormData) {
   revalidatePath("/deals");
   revalidatePath("/dashboard");
   redirect("/deals?success=تمت إضافة الصفقة");
+}
+
+export async function updateDealStage(formData: FormData) {
+  const { supabase, organizationId } = await requireWorkspace();
+  const input = parseDealStageUpdate(formData);
+  if (!input) redirect("/deals?error=تحقق من المرحلة واحتمال الإغلاق وسبب الخسارة عند الحاجة");
+
+  const { data: current, error: currentError } = await supabase
+    .from("deals")
+    .select("stage")
+    .eq("organization_id", organizationId)
+    .eq("id", input.dealId)
+    .maybeSingle();
+  if (currentError || !current) redirect("/deals?error=تعذر العثور على الصفقة");
+  if (!canTransitionDealStage(current.stage, input.stage)) redirect("/deals?error=انتقال مرحلة الصفقة غير مسموح");
+
+  const probability = input.stage === "won" ? 100 : input.stage === "lost" ? 0 : input.probability;
+  const { data: updated, error } = await supabase
+    .from("deals")
+    .update({ stage: input.stage, probability, lost_reason: input.lostReason })
+    .eq("organization_id", organizationId)
+    .eq("id", input.dealId)
+    .select("id")
+    .maybeSingle();
+  if (error || !updated) redirect("/deals?error=تعذر تحديث مرحلة الصفقة");
+  revalidatePath("/deals");
+  revalidatePath("/leads");
+  revalidatePath("/dashboard");
+  redirect("/deals?success=تم تحديث مرحلة الصفقة");
+}
+
+export async function updateAppointmentStatus(formData: FormData) {
+  const { supabase, organizationId } = await requireWorkspace();
+  const input = parseAppointmentStatusUpdate(formData);
+  if (!input) redirect("/appointments?error=تحقق من حالة الموعد وسبب الإلغاء عند الحاجة");
+
+  const { data: current, error: currentError } = await supabase
+    .from("appointments")
+    .select("status")
+    .eq("organization_id", organizationId)
+    .eq("id", input.appointmentId)
+    .maybeSingle();
+  if (currentError || !current) redirect("/appointments?error=تعذر العثور على الموعد");
+  if (!canTransitionAppointmentStatus(current.status, input.status)) redirect("/appointments?error=انتقال حالة الموعد غير مسموح");
+
+  const { data: updated, error } = await supabase
+    .from("appointments")
+    .update({ status: input.status, cancellation_reason: input.cancellationReason })
+    .eq("organization_id", organizationId)
+    .eq("id", input.appointmentId)
+    .select("id")
+    .maybeSingle();
+  if (error || !updated) redirect("/appointments?error=تعذر تحديث حالة الموعد");
+  revalidatePath("/appointments");
+  revalidatePath("/leads");
+  revalidatePath("/dashboard");
+  redirect("/appointments?success=تم تحديث حالة الموعد");
 }
 
 export async function sendWhatsAppMessage(formData: FormData) {
