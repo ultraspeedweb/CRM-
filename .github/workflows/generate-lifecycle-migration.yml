@@ -1,0 +1,31 @@
+name: Generate lifecycle migration
+
+on:
+  push:
+    branches: ["launch/closure-20260924"]
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Create migration using current Supabase CLI
+        run: supabase migration new enforce_crm_lifecycle_transitions
+      - name: Commit generated migration shell
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add supabase/migrations/*_enforce_crm_lifecycle_transitions.sql
+          git commit -m "Generate lifecycle enforcement migration shell [migration-gen]"
+          git push origin HEAD:${GITHUB_REF_NAME}
