@@ -1,0 +1,31 @@
+name: Database gate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  fresh-migration-replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Record CLI version
+        run: supabase --version
+      - name: Discover current local start options
+        run: supabase start --help >/dev/null
+      - name: Start fresh local Supabase and apply migrations
+        run: supabase start
+      - name: Replay all migrations from zero
+        run: supabase db reset
+      - name: Verify local migration history
+        run: supabase migration list --local
+      - name: Run database tests
+        run: supabase test db
+      - name: Stop local Supabase
+        if: always()
+        run: supabase stop --no-backup
