@@ -116,6 +116,7 @@ begin
 end;
 $$;
 revoke all on function public.rls_auto_enable() from public, anon, authenticated;
+grant execute on function public.rls_auto_enable() to service_role;
 
 drop event trigger if exists ensure_rls;
 create event trigger ensure_rls
