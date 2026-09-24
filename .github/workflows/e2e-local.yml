@@ -49,14 +49,14 @@ jobs:
             echo "E2E_BASE_URL=http://127.0.0.1:3000"
           } >> "$GITHUB_ENV"
 
-      - name: Install pinned browser runner
-        run: npm install --no-save --package-lock=false @playwright/test@1.55.0
+      - name: Build exact application dependency tree
+        run: npm run build
+
+      - name: Install isolated browser runner
+        run: npm install --prefix e2e --package-lock=false
 
       - name: Install Chromium
-        run: npx playwright install --with-deps chromium
-
-      - name: Build application against fresh Supabase
-        run: npm run build
+        run: ./e2e/node_modules/.bin/playwright install --with-deps chromium
 
       - name: Start production server
         shell: bash
@@ -73,7 +73,7 @@ jobs:
           exit 1
 
       - name: Run commercial browser flow
-        run: npx playwright test e2e/launch-flow.spec.mjs --reporter=line --workers=1
+        run: ./e2e/node_modules/.bin/playwright test e2e/launch-flow.spec.mjs --reporter=line --workers=1
 
       - name: Print app log on failure
         if: failure()
