@@ -3,12 +3,16 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
+function onboardingError(message: string) {
+  return `/onboarding?error=${encodeURIComponent(message)}`;
+}
+
 export async function createOrganization(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const fullName = String(formData.get("fullName") ?? "").trim();
   const slug = String(formData.get("slug") ?? "").trim().toLowerCase();
   if (name.length < 2 || fullName.length < 2 || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
-    redirect("/onboarding?error=تحقق من اسم المؤسسة والرابط المختصر");
+    redirect(onboardingError("تحقق من اسم المؤسسة والرابط المختصر"));
   }
 
   const supabase = await createClient();
@@ -23,6 +27,6 @@ export async function createOrganization(formData: FormData) {
     member_full_name: fullName,
     locale: "ar",
   });
-  if (error) redirect(`/onboarding?error=${encodeURIComponent(error.code === "23505" ? "الرابط المختصر مستخدم، اختر غيره" : "تعذر تجهيز المؤسسة")}`);
+  if (error) redirect(onboardingError(error.code === "23505" ? "الرابط المختصر مستخدم، اختر غيره" : "تعذر تجهيز المؤسسة"));
   redirect("/dashboard");
 }

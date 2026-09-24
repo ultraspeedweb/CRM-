@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { isStrongEnoughPassword, parseAppointmentInput, parseDealInput, parseFollowUpInput, parseLeadInput } from "./validation";
+import {
+  canTransitionAppointmentStatus,
+  canTransitionDealStage,
+  isStrongEnoughPassword,
+  parseAppointmentInput,
+  parseAppointmentStatusUpdate,
+  parseDealInput,
+  parseDealStageUpdate,
+  parseFollowUpInput,
+  parseLeadInput,
+} from "./validation";
 
 describe("lead input", () => {
   it("normalizes valid values and limits the source allowlist", () => {
@@ -60,5 +70,39 @@ describe("commercial workflow input", () => {
     data.set("amount", "50000");
     data.set("probability", "120");
     expect(parseDealInput(data)).toBeNull();
+  });
+
+  it("allows only forward deal lifecycle transitions", () => {
+    expect(canTransitionDealStage("qualification", "proposal")).toBe(true);
+    expect(canTransitionDealStage("proposal", "negotiation")).toBe(true);
+    expect(canTransitionDealStage("negotiation", "won")).toBe(true);
+    expect(canTransitionDealStage("negotiation", "lost")).toBe(true);
+    expect(canTransitionDealStage("won", "proposal")).toBe(false);
+  });
+
+  it("requires a reason when a deal is lost", () => {
+    const data = new FormData();
+    data.set("dealId", "92bde023-eb4c-4fa5-a6ac-4f479228d361");
+    data.set("stage", "lost");
+    data.set("probability", "0");
+    expect(parseDealStageUpdate(data)).toBeNull();
+    data.set("lostReason", "Budget was not approved");
+    expect(parseDealStageUpdate(data)?.stage).toBe("lost");
+  });
+
+  it("allows only forward appointment lifecycle transitions", () => {
+    expect(canTransitionAppointmentStatus("scheduled", "confirmed")).toBe(true);
+    expect(canTransitionAppointmentStatus("confirmed", "completed")).toBe(true);
+    expect(canTransitionAppointmentStatus("confirmed", "no_show")).toBe(true);
+    expect(canTransitionAppointmentStatus("completed", "scheduled")).toBe(false);
+  });
+
+  it("requires a reason when an appointment is cancelled", () => {
+    const data = new FormData();
+    data.set("appointmentId", "92bde023-eb4c-4fa5-a6ac-4f479228d361");
+    data.set("status", "cancelled");
+    expect(parseAppointmentStatusUpdate(data)).toBeNull();
+    data.set("cancellationReason", "Customer requested a new date");
+    expect(parseAppointmentStatusUpdate(data)?.status).toBe("cancelled");
   });
 });

@@ -1,0 +1,89 @@
+name: Local E2E gate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  commercial-flow:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Install exact app dependencies
+        run: npm ci
+
+      - name: Start fresh local Supabase
+        run: supabase start
+
+      - name: Replay migrations from zero
+        run: supabase db reset
+
+      - name: Export local Supabase credentials for Next.js
+        shell: bash
+        run: |
+          supabase status -o env > /tmp/supabase.env
+          set -a
+          source /tmp/supabase.env
+          set +a
+          PUBLIC_KEY="${PUBLISHABLE_KEY:-${ANON_KEY:-}}"
+          SECRET="${SECRET_KEY:-${SERVICE_ROLE_KEY:-}}"
+          if [ -z "${API_URL:-}" ] || [ -z "$PUBLIC_KEY" ] || [ -z "$SECRET" ]; then
+            echo "Required local Supabase credentials are missing" >&2
+            sed -E 's/=.*/=<redacted>/' /tmp/supabase.env >&2
+            exit 1
+          fi
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL"
+            echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$PUBLIC_KEY"
+            echo "SUPABASE_SECRET_KEY=$SECRET"
+            echo "E2E_BASE_URL=http://127.0.0.1:3000"
+          } >> "$GITHUB_ENV"
+
+      - name: Build exact application dependency tree
+        run: npm run build
+
+      - name: Install isolated browser runner
+        run: npm install --prefix e2e --package-lock=false
+
+      - name: Install Chromium
+        run: ./e2e/node_modules/.bin/playwright install --with-deps chromium
+
+      - name: Start production server
+        shell: bash
+        run: |
+          npm run start -- --hostname 127.0.0.1 > /tmp/satisdesk-e2e.log 2>&1 &
+          echo $! > /tmp/satisdesk-e2e.pid
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:3000/login >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          cat /tmp/satisdesk-e2e.log
+          exit 1
+
+      - name: Run commercial browser flow
+        run: ./e2e/node_modules/.bin/playwright test e2e/launch-flow.spec.mjs --reporter=line --workers=1
+
+      - name: Print app log on failure
+        if: failure()
+        run: cat /tmp/satisdesk-e2e.log || true
+
+      - name: Stop application
+        if: always()
+        run: |
+          if [ -f /tmp/satisdesk-e2e.pid ]; then kill "$(cat /tmp/satisdesk-e2e.pid)" || true; fi
+
+      - name: Stop local Supabase
+        if: always()
+        run: supabase stop --no-backup
