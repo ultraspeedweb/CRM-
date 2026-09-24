@@ -8,165 +8,18 @@ const ownerName = "Launch E2E Owner";
 const orgName = "Launch E2E Organization";
 const orgSlug = "launch-e2e";
 const leadName = "Launch E2E Lead";
+function istanbulLocalDateTime(daysAhead){const date=new Date(Date.now()+daysAhead*86400000);return new Intl.DateTimeFormat("sv-SE",{timeZone:"Europe/Istanbul",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hour12:false}).format(date).replace(" ","T");}
+async function submit(page,form){await Promise.all([page.waitForLoadState("networkidle"),form.locator('button[type="submit"]').click()]);}
 
-function istanbulLocalDateTime(daysAhead) {
-  const date = new Date(Date.now() + daysAhead * 24 * 60 * 60 * 1000);
-  return new Intl.DateTimeFormat("sv-SE", {
-    timeZone: "Europe/Istanbul",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(date).replace(" ", "T");
-}
-
-async function submit(page, form) {
-  await Promise.all([
-    page.waitForLoadState("networkidle"),
-    form.locator('button[type="submit"]').click(),
-  ]);
-}
-
-test("commercial launch flow works UI to DB", async ({ page }) => {
-  await page.goto(`${baseURL}/login?mode=signup`);
-  await page.locator('input[name="fullName"]').fill(ownerName);
-  await page.locator('input[name="email"]').fill(email);
-  await page.locator('input[name="password"]').fill(password);
-  await submit(page, page.locator("form.stack-form"));
-  await expect(page).toHaveURL(/\/onboarding/);
-
-  await page.locator('input[name="fullName"]').fill(ownerName);
-  await page.locator('input[name="name"]').fill(orgName);
-  await page.locator('input[name="slug"]').fill(orgSlug);
-  await submit(page, page.locator("form.stack-form"));
-  await expect(page).toHaveURL(/\/dashboard/);
-
-  await page.goto(`${baseURL}/leads`);
-  await page.locator('input[name="fullName"]').fill(leadName);
-  await page.locator('input[name="phone"]').fill("+905551112233");
-  await page.locator('input[name="email"]').fill("lead-e2e@example.test");
-  await page.locator('select[name="sourceChannel"]').selectOption("manual");
-  await submit(page, page.locator("form.stack-form"));
-  await expect(page.getByText(leadName)).toBeVisible();
-
-  await page.goto(`${baseURL}/follow-ups`);
-  await page.locator('select[name="leadId"]').selectOption({ label: leadName });
-  await page.locator('input[name="subject"]').fill("Launch E2E follow-up");
-  await page.locator('input[name="dueAt"]').fill(istanbulLocalDateTime(1));
-  await submit(page, page.locator("form.stack-form"));
-  const followUpRow = page.locator(".task-row").filter({ hasText: "Launch E2E follow-up" });
-  await expect(followUpRow).toBeVisible();
-  await submit(page, followUpRow.locator("form"));
-  await expect(page.getByText("كل شيء منجز")).toBeVisible();
-
-  await page.goto(`${baseURL}/appointments`);
-  await page.locator('select[name="leadId"]').selectOption({ label: leadName });
-  await page.locator('input[name="title"]').fill("Launch E2E Completed Appointment");
-  await page.locator('input[name="startsAt"]').fill(istanbulLocalDateTime(2));
-  await page.locator('input[name="location"]').fill("E2E Office");
-  await submit(page, page.locator("article.form-panel form"));
-  let appointmentRow = page.locator(".appointment-row").filter({ hasText: "Launch E2E Completed Appointment" });
-  await expect(appointmentRow).toBeVisible();
-  await appointmentRow.locator('select[name="status"]').selectOption("confirmed");
-  await submit(page, appointmentRow.locator("form"));
-  appointmentRow = page.locator(".appointment-row").filter({ hasText: "Launch E2E Completed Appointment" });
-  await expect(appointmentRow).toContainText("مؤكد");
-  await appointmentRow.locator('select[name="status"]').selectOption("completed");
-  await submit(page, appointmentRow.locator("form"));
-  appointmentRow = page.locator(".appointment-row").filter({ hasText: "Launch E2E Completed Appointment" });
-  await expect(appointmentRow).toContainText("مكتمل");
-
-  await page.locator('select[name="leadId"]').selectOption({ label: leadName });
-  await page.locator('input[name="title"]').fill("Launch E2E Cancelled Appointment");
-  await page.locator('input[name="startsAt"]').fill(istanbulLocalDateTime(3));
-  await submit(page, page.locator("article.form-panel form"));
-  let cancelledRow = page.locator(".appointment-row").filter({ hasText: "Launch E2E Cancelled Appointment" });
-  await cancelledRow.locator('select[name="status"]').selectOption("cancelled");
-  await cancelledRow.locator('input[name="cancellationReason"]').fill("E2E customer cancellation");
-  await submit(page, cancelledRow.locator("form"));
-  cancelledRow = page.locator(".appointment-row").filter({ hasText: "Launch E2E Cancelled Appointment" });
-  await expect(cancelledRow).toContainText("E2E customer cancellation");
-
-  await page.goto(`${baseURL}/deals`);
-  const createDeal = page.locator("section.deal-create form");
-  await createDeal.locator('select[name="leadId"]').selectOption({ label: leadName });
-  await createDeal.locator('input[name="title"]').fill("Launch E2E Won Deal");
-  await createDeal.locator('input[name="amount"]').fill("50000");
-  await createDeal.locator('select[name="currency"]').selectOption("TRY");
-  await createDeal.locator('input[name="probability"]').fill("20");
-  await submit(page, createDeal);
-
-  let wonCard = page.locator(".deal-card").filter({ hasText: "Launch E2E Won Deal" });
-  await wonCard.locator('select[name="stage"]').selectOption("proposal");
-  await wonCard.locator('input[name="probability"]').fill("40");
-  await submit(page, wonCard.locator("form"));
-  wonCard = page.locator(".deal-card").filter({ hasText: "Launch E2E Won Deal" });
-  await wonCard.locator('select[name="stage"]').selectOption("negotiation");
-  await wonCard.locator('input[name="probability"]').fill("75");
-  await submit(page, wonCard.locator("form"));
-  wonCard = page.locator(".deal-card").filter({ hasText: "Launch E2E Won Deal" });
-  await wonCard.locator('select[name="stage"]').selectOption("won");
-  await submit(page, wonCard.locator("form"));
-  wonCard = page.locator(".deal-card").filter({ hasText: "Launch E2E Won Deal" });
-  await expect(wonCard).toContainText("100%");
-
-  const createLostDeal = page.locator("section.deal-create form");
-  await createLostDeal.locator('select[name="leadId"]').selectOption({ label: leadName });
-  await createLostDeal.locator('input[name="title"]').fill("Launch E2E Lost Deal");
-  await createLostDeal.locator('input[name="amount"]').fill("12000");
-  await createLostDeal.locator('select[name="currency"]').selectOption("TRY");
-  await createLostDeal.locator('input[name="probability"]').fill("20");
-  await submit(page, createLostDeal);
-  let lostCard = page.locator(".deal-card").filter({ hasText: "Launch E2E Lost Deal" });
-  await lostCard.locator('select[name="stage"]').selectOption("lost");
-  await lostCard.locator('input[name="lostReason"]').fill("E2E customer chose another provider");
-  await submit(page, lostCard.locator("form"));
-  lostCard = page.locator(".deal-card").filter({ hasText: "Launch E2E Lost Deal" });
-  await expect(lostCard).toContainText("0%");
-  await expect(lostCard).toContainText("E2E customer chose another provider");
-
-  await page.goto(`${baseURL}/dashboard`);
-  await page.getByRole("button", { name: "تسجيل الخروج" }).click();
-  await expect(page).toHaveURL(/\/login/);
-  await page.locator('input[name="email"]').fill(email);
-  await page.locator('input[name="password"]').fill(password);
-  await submit(page, page.locator("form.stack-form"));
-  await expect(page).toHaveURL(/\/dashboard/);
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const secretKey = process.env.SUPABASE_SECRET_KEY;
-  expect(supabaseUrl).toBeTruthy();
-  expect(secretKey).toBeTruthy();
-  const admin = createClient(supabaseUrl, secretKey, { auth: { persistSession: false } });
-
-  const { data: org, error: orgError } = await admin.from("organizations").select("id").eq("slug", orgSlug).single();
-  expect(orgError).toBeNull();
-  expect(org?.id).toBeTruthy();
-
-  const { data: lead, error: leadError } = await admin.from("leads").select("id,status").eq("organization_id", org.id).eq("full_name", leadName).single();
-  expect(leadError).toBeNull();
-  expect(lead?.id).toBeTruthy();
-
-  const { data: wonDeal } = await admin.from("deals").select("stage,probability,closed_at").eq("organization_id", org.id).eq("title", "Launch E2E Won Deal").single();
-  expect(wonDeal?.stage).toBe("won");
-  expect(Number(wonDeal?.probability)).toBe(100);
-  expect(wonDeal?.closed_at).toBeTruthy();
-
-  const { data: lostDeal } = await admin.from("deals").select("stage,probability,lost_reason,closed_at").eq("organization_id", org.id).eq("title", "Launch E2E Lost Deal").single();
-  expect(lostDeal?.stage).toBe("lost");
-  expect(Number(lostDeal?.probability)).toBe(0);
-  expect(lostDeal?.lost_reason).toBe("E2E customer chose another provider");
-  expect(lostDeal?.closed_at).toBeTruthy();
-
-  const { data: completedAppointment } = await admin.from("appointments").select("status").eq("organization_id", org.id).eq("title", "Launch E2E Completed Appointment").single();
-  expect(completedAppointment?.status).toBe("completed");
-  const { data: cancelledAppointment } = await admin.from("appointments").select("status,cancellation_reason").eq("organization_id", org.id).eq("title", "Launch E2E Cancelled Appointment").single();
-  expect(cancelledAppointment?.status).toBe("cancelled");
-  expect(cancelledAppointment?.cancellation_reason).toBe("E2E customer cancellation");
-
-  const { data: followUp } = await admin.from("follow_ups").select("status,completed_at").eq("organization_id", org.id).eq("subject", "Launch E2E follow-up").single();
-  expect(followUp?.status).toBe("completed");
-  expect(followUp?.completed_at).toBeTruthy();
+test("commercial launch flow works UI to DB",async({page})=>{
+ await page.goto(`${baseURL}/login?mode=signup`); await page.locator('input[name="fullName"]').fill(ownerName); await page.locator('input[name="email"]').fill(email); await page.locator('input[name="password"]').fill(password); await submit(page,page.locator("form.stack-form")); await expect(page).toHaveURL(/\/onboarding/);
+ await page.locator('input[name="fullName"]').fill(ownerName); await page.locator('input[name="name"]').fill(orgName); await page.locator('input[name="slug"]').fill(orgSlug); await submit(page,page.locator("form.stack-form")); await expect(page).toHaveURL(/\/dashboard/);
+ await page.goto(`${baseURL}/leads`); await page.locator('input[name="fullName"]').fill(leadName); await page.locator('input[name="phone"]').fill("+905551112233"); await page.locator('input[name="email"]').fill("lead-e2e@example.test"); await page.locator('select[name="sourceChannel"]').selectOption("manual"); await submit(page,page.locator("form.stack-form")); await expect(page.getByText(leadName)).toBeVisible();
+ await page.goto(`${baseURL}/follow-ups`); await page.locator('select[name="leadId"]').selectOption({label:leadName}); await page.locator('input[name="subject"]').fill("Launch E2E follow-up"); await page.locator('input[name="dueAt"]').fill(istanbulLocalDateTime(1)); await submit(page,page.locator("form.stack-form")); const followUpRow=page.locator(".task-row").filter({hasText:"Launch E2E follow-up"}); await expect(followUpRow).toBeVisible(); await submit(page,followUpRow.locator("form")); await expect(followUpRow).toHaveCount(0);
+ await page.goto(`${baseURL}/appointments`); await page.locator('select[name="leadId"]').selectOption({label:leadName}); await page.locator('input[name="title"]').fill("Launch E2E Completed Appointment"); await page.locator('input[name="startsAt"]').fill(istanbulLocalDateTime(2)); await page.locator('input[name="location"]').fill("E2E Office"); await submit(page,page.locator("article.form-panel form")); let appointmentRow=page.locator(".appointment-row").filter({hasText:"Launch E2E Completed Appointment"}); await expect(appointmentRow).toBeVisible(); await appointmentRow.locator('select[name="status"]').selectOption("confirmed"); await submit(page,appointmentRow.locator("form")); appointmentRow=page.locator(".appointment-row").filter({hasText:"Launch E2E Completed Appointment"}); await expect(appointmentRow.locator('select[name="status"]')).toHaveValue("confirmed"); await appointmentRow.locator('select[name="status"]').selectOption("completed"); await submit(page,appointmentRow.locator("form")); appointmentRow=page.locator(".appointment-row").filter({hasText:"Launch E2E Completed Appointment"}); await expect(appointmentRow.locator("form")).toHaveCount(0);
+ await page.locator('select[name="leadId"]').selectOption({label:leadName}); await page.locator('input[name="title"]').fill("Launch E2E Cancelled Appointment"); await page.locator('input[name="startsAt"]').fill(istanbulLocalDateTime(3)); await submit(page,page.locator("article.form-panel form")); let cancelledRow=page.locator(".appointment-row").filter({hasText:"Launch E2E Cancelled Appointment"}); await cancelledRow.locator('select[name="status"]').selectOption("cancelled"); await cancelledRow.locator('input[name="cancellationReason"]').fill("E2E customer cancellation"); await submit(page,cancelledRow.locator("form")); cancelledRow=page.locator(".appointment-row").filter({hasText:"Launch E2E Cancelled Appointment"}); await expect(cancelledRow).toContainText("E2E customer cancellation"); await expect(cancelledRow.locator("form")).toHaveCount(0);
+ await page.goto(`${baseURL}/deals`); const createDeal=page.locator("section.deal-create form"); await createDeal.locator('select[name="leadId"]').selectOption({label:leadName}); await createDeal.locator('input[name="title"]').fill("Launch E2E Won Deal"); await createDeal.locator('input[name="amount"]').fill("50000"); await createDeal.locator('select[name="currency"]').selectOption("TRY"); await createDeal.locator('input[name="probability"]').fill("20"); await submit(page,createDeal); let wonCard=page.locator(".deal-card").filter({hasText:"Launch E2E Won Deal"}); for(const [stage,probability] of [["proposal","40"],["negotiation","75"]]){await wonCard.locator('select[name="stage"]').selectOption(stage);await wonCard.locator('input[name="probability"]').fill(probability);await submit(page,wonCard.locator("form"));wonCard=page.locator(".deal-card").filter({hasText:"Launch E2E Won Deal"});} await wonCard.locator('select[name="stage"]').selectOption("won"); await submit(page,wonCard.locator("form")); wonCard=page.locator(".deal-card").filter({hasText:"Launch E2E Won Deal"}); await expect(wonCard.locator("form")).toHaveCount(0); await expect(wonCard).toContainText("100%");
+ const createLostDeal=page.locator("section.deal-create form"); await createLostDeal.locator('select[name="leadId"]').selectOption({label:leadName}); await createLostDeal.locator('input[name="title"]').fill("Launch E2E Lost Deal"); await createLostDeal.locator('input[name="amount"]').fill("12000"); await createLostDeal.locator('select[name="currency"]').selectOption("TRY"); await createLostDeal.locator('input[name="probability"]').fill("20"); await submit(page,createLostDeal); let lostCard=page.locator(".deal-card").filter({hasText:"Launch E2E Lost Deal"}); await lostCard.locator('select[name="stage"]').selectOption("lost"); await lostCard.locator('input[name="lostReason"]').fill("E2E customer chose another provider"); await submit(page,lostCard.locator("form")); lostCard=page.locator(".deal-card").filter({hasText:"Launch E2E Lost Deal"}); await expect(lostCard.locator("form")).toHaveCount(0); await expect(lostCard).toContainText("0%"); await expect(lostCard).toContainText("E2E customer chose another provider");
+ await page.goto(`${baseURL}/dashboard`); await submit(page,page.locator(".sidebar-bottom form")); await expect(page).toHaveURL(/\/login/); await page.locator('input[name="email"]').fill(email); await page.locator('input[name="password"]').fill(password); await submit(page,page.locator("form.stack-form")); await expect(page).toHaveURL(/\/dashboard/);
+ const supabaseUrl=process.env.NEXT_PUBLIC_SUPABASE_URL,secretKey=process.env.SUPABASE_SECRET_KEY; expect(supabaseUrl).toBeTruthy();expect(secretKey).toBeTruthy(); const admin=createClient(supabaseUrl,secretKey,{auth:{persistSession:false}}); const {data:org,error:orgError}=await admin.from("organizations").select("id").eq("slug",orgSlug).single();expect(orgError).toBeNull();expect(org?.id).toBeTruthy(); const {data:lead,error:leadError}=await admin.from("leads").select("id,status").eq("organization_id",org.id).eq("full_name",leadName).single();expect(leadError).toBeNull();expect(lead?.id).toBeTruthy(); const {data:wonDeal}=await admin.from("deals").select("stage,probability,closed_at").eq("organization_id",org.id).eq("title","Launch E2E Won Deal").single();expect(wonDeal?.stage).toBe("won");expect(Number(wonDeal?.probability)).toBe(100);expect(wonDeal?.closed_at).toBeTruthy(); const {data:lostDeal}=await admin.from("deals").select("stage,probability,lost_reason,closed_at").eq("organization_id",org.id).eq("title","Launch E2E Lost Deal").single();expect(lostDeal?.stage).toBe("lost");expect(Number(lostDeal?.probability)).toBe(0);expect(lostDeal?.lost_reason).toBe("E2E customer chose another provider");expect(lostDeal?.closed_at).toBeTruthy(); const {data:completedAppointment}=await admin.from("appointments").select("status").eq("organization_id",org.id).eq("title","Launch E2E Completed Appointment").single();expect(completedAppointment?.status).toBe("completed"); const {data:cancelledAppointment}=await admin.from("appointments").select("status,cancellation_reason").eq("organization_id",org.id).eq("title","Launch E2E Cancelled Appointment").single();expect(cancelledAppointment?.status).toBe("cancelled");expect(cancelledAppointment?.cancellation_reason).toBe("E2E customer cancellation"); const {data:followUp}=await admin.from("follow_ups").select("status,completed_at").eq("organization_id",org.id).eq("subject","Launch E2E follow-up").single();expect(followUp?.status).toBe("completed");expect(followUp?.completed_at).toBeTruthy();
 });
