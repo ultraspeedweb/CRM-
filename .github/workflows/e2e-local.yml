@@ -73,7 +73,7 @@ jobs:
           exit 1
 
       - name: Run commercial browser flow
-        run: npx playwright test e2e/launch-flow.spec.ts --reporter=line --workers=1
+        run: npx playwright test e2e/launch-flow.spec.mjs --reporter=line --workers=1
 
       - name: Print app log on failure
         if: failure()
