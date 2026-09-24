@@ -1,26 +1,22 @@
 import { Languages, MessageCircleMore, Send, WifiOff } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
+import { getLocale, type Locale } from "@/lib/i18n";
 import { requireWorkspace } from "@/lib/workspace";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { resolveWhatsAppAccessToken } from "@/lib/whatsapp";
 import { sendWhatsAppMessage } from "../actions";
 
-type Props = { searchParams: Promise<{ error?: string; success?: string }> };
-
-export default async function ConversationsPage({ searchParams }: Props) {
-  const params = await searchParams;
-  const { supabase, organizationId } = await requireWorkspace();
-  const { data } = await supabase.from("conversations").select("id, channel, status, customer_language, summary, unread_count, last_message_at, leads(full_name)").eq("organization_id", organizationId).order("last_message_at", { ascending: false, nullsFirst: false });
-  let whatsappReady = false;
-  if (process.env.META_APP_SECRET && process.env.WHATSAPP_VERIFY_TOKEN && process.env.SUPABASE_SECRET_KEY) {
-    const admin = createAdminClient();
-    const { data: connections } = await admin.from("whatsapp_connections").select("access_token_env_key").eq("organization_id", organizationId).eq("status", "active");
-    whatsappReady = Boolean(connections?.some((connection) => resolveWhatsAppAccessToken(connection.access_token_env_key)));
-  }
-
-  return <main className="content"><PageHeader title="المحادثات" subtitle="صندوق واحد لواتساب، الويب والقنوات الاجتماعية مع ترجمة محفوظة." />
-    {params.error && <div className="alert error">{params.error}</div>}{params.success && <div className="alert success">{params.success}</div>}
-    {!whatsappReady && <div className="connector-notice"><WifiOff size={18} /><div><strong>موصل WhatsApp جاهز للكود وينتظر بيانات Meta</strong><span>بعد إضافة رقم الأعمال والمفاتيح سيبدأ استقبال الرسائل وإرسالها من هذه الشاشة.</span></div></div>}
-    <section className="panel"><div className="panel-head"><div><h2>صندوق الوارد</h2><p>{data?.length ?? 0} محادثة</p></div><Languages size={20} /></div><div className="cards-list">{(data ?? []).map((item) => { const lead = Array.isArray(item.leads) ? item.leads[0] : item.leads; return <div className="conversation-card" key={item.id}><div className="conversation-row"><div className="channel-icon"><MessageCircleMore size={19} /></div><div><strong>{lead?.full_name ?? "محادثة جديدة"}</strong><span>{item.summary || "لا يوجد ملخص بعد"}</span></div><div className="conversation-side"><span>{item.channel}</span>{item.unread_count > 0 && <b>{item.unread_count}</b>}</div></div>{item.channel === "whatsapp" && <form className="reply-form" action={sendWhatsAppMessage}><input type="hidden" name="conversationId" value={item.id} /><input name="body" maxLength={4096} placeholder={whatsappReady ? "اكتب ردًا للعميل..." : "أكمل ربط Meta أولًا"} disabled={!whatsappReady} required /><button type="submit" disabled={!whatsappReady} aria-label="إرسال"><Send size={17} /></button></form>}</div>})}{!data?.length && <div className="empty-state"><MessageCircleMore size={30} /><strong>لا توجد محادثات بعد</strong><span>ستظهر رسائل WhatsApp هنا بعد ربط رقم الأعمال.</span></div>}</div></section>
-  </main>;
+type Copy={title:string;sub:string;waTitle:string;waHint:string;inbox:string;count:(n:number)=>string;newConversation:string;noSummary:string;reply:string;connect:string;send:string;empty:string;emptyHint:string};
+const copy:Record<Locale,Copy>={
+ ar:{title:"المحادثات",sub:"صندوق واحد لواتساب، الويب والقنوات الاجتماعية مع ترجمة محفوظة.",waTitle:"موصل WhatsApp جاهز للكود وينتظر بيانات Meta",waHint:"بعد إضافة رقم الأعمال والمفاتيح سيبدأ استقبال الرسائل وإرسالها من هذه الشاشة.",inbox:"صندوق الوارد",count:n=>`${n} محادثة`,newConversation:"محادثة جديدة",noSummary:"لا يوجد ملخص بعد",reply:"اكتب ردًا للعميل...",connect:"أكمل ربط Meta أولًا",send:"إرسال",empty:"لا توجد محادثات بعد",emptyHint:"ستظهر رسائل WhatsApp هنا بعد ربط رقم الأعمال."},
+ tr:{title:"Konuşmalar",sub:"WhatsApp, web ve sosyal kanallar için kaydedilmiş çevirilerle tek gelen kutusu.",waTitle:"WhatsApp bağlantısı kod tarafında hazır; Meta bilgileri bekleniyor",waHint:"İşletme numarası ve anahtarlar eklendiğinde mesajlar bu ekrandan alınıp gönderilebilir.",inbox:"Gelen kutusu",count:n=>`${n} konuşma`,newConversation:"Yeni konuşma",noSummary:"Henüz özet yok",reply:"Müşteriye yanıt yazın...",connect:"Önce Meta bağlantısını tamamlayın",send:"Gönder",empty:"Henüz konuşma yok",emptyHint:"İşletme numarası bağlandıktan sonra WhatsApp mesajları burada görünür."},
+ en:{title:"Conversations",sub:"One inbox for WhatsApp, web, and social channels with saved translations.",waTitle:"The WhatsApp connector is code-ready and waiting for Meta credentials",waHint:"Once the business number and keys are configured, messages can be received and sent from this screen.",inbox:"Inbox",count:n=>`${n} conversation${n===1?"":"s"}`,newConversation:"New conversation",noSummary:"No summary yet",reply:"Write a reply to the customer...",connect:"Complete the Meta connection first",send:"Send",empty:"No conversations yet",emptyHint:"WhatsApp messages will appear here after the business number is connected."}
+};
+type Props={searchParams:Promise<{error?:string;success?:string}>};
+export default async function ConversationsPage({searchParams}:Props){
+ const [params,locale,{supabase,organizationId}]=await Promise.all([searchParams,getLocale(),requireWorkspace()]); const t=copy[locale];
+ const {data}=await supabase.from("conversations").select("id, channel, status, customer_language, summary, unread_count, last_message_at, leads(full_name)").eq("organization_id",organizationId).order("last_message_at",{ascending:false,nullsFirst:false});
+ let whatsappReady=false; if(process.env.META_APP_SECRET&&process.env.WHATSAPP_VERIFY_TOKEN&&process.env.SUPABASE_SECRET_KEY){const admin=createAdminClient();const {data:connections}=await admin.from("whatsapp_connections").select("access_token_env_key").eq("organization_id",organizationId).eq("status","active");whatsappReady=Boolean(connections?.some(connection=>resolveWhatsAppAccessToken(connection.access_token_env_key)));}
+ return <main className="content"><PageHeader title={t.title} subtitle={t.sub}/>{params.error&&<div className="alert error">{params.error}</div>}{params.success&&<div className="alert success">{params.success}</div>}{!whatsappReady&&<div className="connector-notice"><WifiOff size={18}/><div><strong>{t.waTitle}</strong><span>{t.waHint}</span></div></div>}
+ <section className="panel"><div className="panel-head"><div><h2>{t.inbox}</h2><p>{t.count(data?.length??0)}</p></div><Languages size={20}/></div><div className="cards-list">{(data??[]).map(item=>{const lead=Array.isArray(item.leads)?item.leads[0]:item.leads;return <div className="conversation-card" key={item.id}><div className="conversation-row"><div className="channel-icon"><MessageCircleMore size={19}/></div><div><strong>{lead?.full_name??t.newConversation}</strong><span>{item.summary||t.noSummary}</span></div><div className="conversation-side"><span>{item.channel}</span>{item.unread_count>0&&<b>{item.unread_count}</b>}</div></div>{item.channel==="whatsapp"&&<form className="reply-form" action={sendWhatsAppMessage}><input type="hidden" name="conversationId" value={item.id}/><input name="body" maxLength={4096} placeholder={whatsappReady?t.reply:t.connect} disabled={!whatsappReady} required/><button type="submit" disabled={!whatsappReady} aria-label={t.send}><Send size={17}/></button></form>}</div>})}{!data?.length&&<div className="empty-state"><MessageCircleMore size={30}/><strong>{t.empty}</strong><span>{t.emptyHint}</span></div>}</div></section></main>;
 }
