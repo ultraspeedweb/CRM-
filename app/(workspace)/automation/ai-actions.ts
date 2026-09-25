@@ -21,7 +21,8 @@ export async function resumeAiConversation(formData: FormData) {
   const { supabase } = await requireWorkspace();
   const conversationId = String(formData.get("conversationId") ?? "").trim();
   if (!uuid.test(conversationId)) redirect(destination("error", "معرّف المحادثة غير صالح"));
-  const { data, error } = await supabase.rpc("resume_conversation_ai", { p_conversation_id: conversationId });
+  const rpc = supabase.rpc as unknown as (fn: string, args: Record<string, string>) => Promise<{ data: boolean | null; error: { message: string } | null }>;
+  const { data, error } = await rpc("resume_conversation_ai", { p_conversation_id: conversationId });
   if (error || data !== true) redirect(destination("error", "تعذر إعادة المحادثة إلى AI أو لا تملك الصلاحية"));
   revalidatePath("/automation"); revalidatePath("/conversations"); redirect(destination("success", "تمت إعادة المحادثة إلى AI"));
 }
