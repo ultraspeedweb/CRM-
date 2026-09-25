@@ -5,7 +5,6 @@ import { redirect } from "next/navigation";
 import { requireWorkspace } from "@/lib/workspace";
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const managerRoles = new Set(["owner", "admin", "manager"]);
 function destination(kind: "error" | "success", message: string) { return `/automation?${kind}=${encodeURIComponent(message)}`; }
 
 export async function handoffConversationToHuman(formData: FormData) {
@@ -19,11 +18,10 @@ export async function handoffConversationToHuman(formData: FormData) {
 }
 
 export async function resumeAiConversation(formData: FormData) {
-  const { supabase, organizationId, membership } = await requireWorkspace();
+  const { supabase } = await requireWorkspace();
   const conversationId = String(formData.get("conversationId") ?? "").trim();
   if (!uuid.test(conversationId)) redirect(destination("error", "معرّف المحادثة غير صالح"));
-  if (!managerRoles.has(membership.role)) redirect(destination("error", "إعادة تفعيل AI تتطلب صلاحية مدير"));
-  const { data, error } = await supabase.from("conversations").update({ handling_mode: "ai", handoff_reason: null, handoff_at: null, handoff_by: null }).eq("organization_id", organizationId).eq("id", conversationId).eq("handling_mode", "human").select("id").maybeSingle();
-  if (error || !data) redirect(destination("error", "تعذر إعادة المحادثة إلى AI"));
+  const { data, error } = await supabase.rpc("resume_conversation_ai", { p_conversation_id: conversationId });
+  if (error || data !== true) redirect(destination("error", "تعذر إعادة المحادثة إلى AI أو لا تملك الصلاحية"));
   revalidatePath("/automation"); revalidatePath("/conversations"); redirect(destination("success", "تمت إعادة المحادثة إلى AI"));
 }
