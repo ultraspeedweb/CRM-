@@ -1,0 +1,3 @@
+# Workstream 4 — Governed AI Sales Agent execution
+
+Commercial V1 closure contract: AI suggestions remain proposals until explicitly approved. Only owner/admin/manager may execute an approved suggestion. Execution is tenant scoped by organization_id and suggestion_id. Only approved sales_reply suggestions with non-empty content are executable. Execution creates a pending outbound message; the existing channel delivery layer remains responsible for provider delivery. Successful execution transitions the suggestion to sent and writes ai.suggestion.executed to audit_logs with message/conversation/approver evidence. No anonymous/public execution privilege is granted.
