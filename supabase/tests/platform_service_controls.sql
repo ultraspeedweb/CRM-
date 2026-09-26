@@ -1,0 +1,11 @@
+begin;
+select plan(7);
+select has_table('private','platform_service_controls','platform service controls exist');
+select has_function('public','set_platform_service_status',array['uuid','text','text','text'],'service control RPC exists');
+select is_definer('public','set_platform_service_status',array['uuid','text','text','text'],'service control is security definer');
+select has_function('public','get_platform_service_overview',array[]::text[],'service overview exists');
+select is_definer('public','get_platform_service_overview',array[]::text[],'service overview is security definer');
+select has_table('public','audit_logs','service actions have an audit sink');
+select has_table('public','billing_events','billing ledger remains available to control plane');
+select * from finish();
+rollback;

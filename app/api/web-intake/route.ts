@@ -1,5 +1,6 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isPlatformServiceEnabled } from "@/lib/platform-service-guard";
 
 export const runtime = "nodejs";
 
@@ -15,6 +16,7 @@ export async function POST(request:Request){
  const organizationId=String(body.organizationId??"").trim();const name=String(body.name??"").trim().slice(0,160);const email=String(body.email??"").trim().toLowerCase().slice(0,320);const phone=String(body.phone??"").trim().slice(0,40);const text=String(body.message??"").trim().slice(0,10000);const threadId=String(body.threadId??"").trim().slice(0,200);const language=["ar","tr","en","unknown"].includes(body.language??"")?body.language:"unknown";
  if(!UUID_RE.test(organizationId)||!name||!text||(!email&&!phone))return new Response("Invalid intake",{status:400});
  const supabase=createAdminClient();const {data:org}=await supabase.from("organizations").select("id").eq("id",organizationId).maybeSingle();if(!org)return new Response("Unknown organization",{status:404});
+ if(!await isPlatformServiceEnabled(organizationId,"web_inbox"))return new Response("Service unavailable",{status:503});
  const identity=email?`email:${email}`:`phone:${phone}`;const externalRef=`web:${identity}`;
  let {data:lead}=await supabase.from("leads").select("id").eq("organization_id",organizationId).eq("external_ref",externalRef).maybeSingle();
  if(!lead){const created=await supabase.from("leads").insert({organization_id:organizationId,full_name:name,email:email||null,phone:phone||null,external_ref:externalRef,source_channel:"web",preferred_language:language}).select("id").single();if(created.error)return new Response("Lead creation failed",{status:500});lead=created.data;}
