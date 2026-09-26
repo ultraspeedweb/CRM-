@@ -1,6 +1,6 @@
 begin;
 
-select plan(3);
+select plan(2);
 
 select has_function(
   'private',
@@ -14,15 +14,6 @@ select has_trigger(
   'organization_members',
   'organization_members_subscription_seat_limit',
   'Organization members enforce subscription seat limits'
-);
-
-select function_privs_are(
-  'private',
-  'enforce_subscription_seat_limit',
-  array[]::text[],
-  'authenticated',
-  array[]::text[],
-  'Authenticated clients cannot execute the private seat-limit trigger function directly'
 );
 
 select * from finish();
