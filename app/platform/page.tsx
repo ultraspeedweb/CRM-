@@ -17,14 +17,28 @@ type Company = {
   current_period_end: string | null;
 };
 
+type PlatformRpcClient = {
+  rpc: (name: "get_platform_company_overview") => Promise<{ data: unknown; error: unknown }>;
+};
+
+function isCompany(value: unknown): value is Company {
+  if (!value || typeof value !== "object") return false;
+  const row = value as Record<string, unknown>;
+  return typeof row.organization_id === "string"
+    && typeof row.organization_name === "string"
+    && typeof row.member_count === "number";
+}
+
 export default async function PlatformPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data, error } = await supabase.rpc("get_platform_company_overview");
+  // This RPC is introduced by the same closure slice. Keep the generated tenant
+  // Database type strict while validating the new control-plane boundary here.
+  const { data, error } = await (supabase as unknown as PlatformRpcClient).rpc("get_platform_company_overview");
   if (error) redirect("/dashboard");
-  const companies = (data ?? []) as Company[];
+  const companies = Array.isArray(data) ? data.filter(isCompany) : [];
   const active = companies.filter((c) => c.subscription_status === "active").length;
   const trials = companies.filter((c) => c.subscription_status === "trial").length;
   const seats = companies.reduce((sum, c) => sum + Number(c.member_count ?? 0), 0);
