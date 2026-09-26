@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isPlatformServiceEnabled } from "@/lib/platform-service-guard";
 import { buildWhatsAppThreadId, extractWhatsAppEvents, verifyMetaSignature } from "@/lib/whatsapp";
 
 export const runtime = "nodejs";
@@ -25,16 +26,11 @@ export async function POST(request: Request) {
   for (const event of extractWhatsAppEvents(payload)) {
     const phoneNumberId = event.metadata?.phone_number_id;
     if (!phoneNumberId) continue;
-
-    const { data: connection, error: connectionError } = await supabase
-      .from("whatsapp_connections")
-      .select("organization_id")
-      .eq("phone_number_id", phoneNumberId)
-      .eq("status", "active")
-      .maybeSingle();
+    const { data: connection, error: connectionError } = await supabase.from("whatsapp_connections").select("organization_id").eq("phone_number_id", phoneNumberId).eq("status", "active").maybeSingle();
     if (connectionError) return new Response("Connection lookup failed", { status: 500 });
     if (!connection) continue;
     const organizationId = connection.organization_id;
+    if (!await isPlatformServiceEnabled(organizationId, "whatsapp")) continue;
 
     for (const status of event.statuses ?? []) {
       const mapped = ["sent", "delivered", "read", "failed"].includes(status.status) ? status.status : "sent";
@@ -47,25 +43,15 @@ export async function POST(request: Request) {
       const externalRef = `whatsapp:${waId}`;
       const externalThreadId = buildWhatsAppThreadId(phoneNumberId, waId);
       let { data: lead } = await supabase.from("leads").select("id").eq("organization_id", organizationId).eq("external_ref", externalRef).maybeSingle();
-      if (!lead) {
-        const created = await supabase.from("leads").insert({ organization_id: organizationId, full_name: contactName, phone: waId, whatsapp_phone: waId, external_ref: externalRef, source_channel: "whatsapp", preferred_language: "unknown" }).select("id").single();
-        lead = created.data;
-      }
+      if (!lead) { const created = await supabase.from("leads").insert({ organization_id: organizationId, full_name: contactName, phone: waId, whatsapp_phone: waId, external_ref: externalRef, source_channel: "whatsapp", preferred_language: "unknown" }).select("id").single(); lead = created.data; }
       if (!lead) continue;
-
       let { data: conversation } = await supabase.from("conversations").select("id").eq("organization_id", organizationId).eq("channel", "whatsapp").eq("external_thread_id", externalThreadId).maybeSingle();
-      if (!conversation) {
-        const created = await supabase.from("conversations").insert({ organization_id: organizationId, lead_id: lead.id, channel: "whatsapp", external_thread_id: externalThreadId, handling_mode: "human", last_message_at: new Date(Number(message.timestamp ?? 0) * 1000).toISOString(), unread_count: 1 }).select("id").single();
-        conversation = created.data;
-      } else {
-        await supabase.from("conversations").update({ status: "open", last_message_at: new Date(Number(message.timestamp ?? 0) * 1000).toISOString(), unread_count: 1 }).eq("organization_id", organizationId).eq("id", conversation.id);
-      }
+      if (!conversation) { const created = await supabase.from("conversations").insert({ organization_id: organizationId, lead_id: lead.id, channel: "whatsapp", external_thread_id: externalThreadId, handling_mode: "human", last_message_at: new Date(Number(message.timestamp ?? 0) * 1000).toISOString(), unread_count: 1 }).select("id").single(); conversation = created.data; }
+      else await supabase.from("conversations").update({ status: "open", last_message_at: new Date(Number(message.timestamp ?? 0) * 1000).toISOString(), unread_count: 1 }).eq("organization_id", organizationId).eq("id", conversation.id);
       if (!conversation) continue;
-
       const inserted = await supabase.from("messages").insert({ organization_id: organizationId, conversation_id: conversation.id, external_message_id: message.id, direction: "inbound", sender_type: "customer", message_type: message.type === "text" ? "text" : "system", original_text: message.text?.body ?? `[${message.type ?? "message"}]`, original_language: "unknown", delivery_status: "received", raw_payload: JSON.parse(JSON.stringify(message)) });
       if (inserted.error && inserted.error.code !== "23505") throw inserted.error;
     }
   }
-
   return Response.json({ received: true });
 }
