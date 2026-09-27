@@ -20,6 +20,20 @@ export async function createOrganization(formData: FormData) {
   const userId = claims?.claims?.sub;
   if (!userId) redirect("/login");
 
+  // Onboarding is idempotent per authenticated user. A retry, double click,
+  // refreshed confirmation link, or stale browser tab must never create a
+  // second tenant for the same account.
+  const { data: existingMembership, error: membershipError } = await supabase
+    .from("organization_members")
+    .select("organization_id")
+    .eq("user_id", userId)
+    .eq("status", "active")
+    .limit(1)
+    .maybeSingle();
+
+  if (membershipError) redirect(onboardingError("تعذر التحقق من عضوية المؤسسة"));
+  if (existingMembership?.organization_id) redirect("/dashboard");
+
   const { error } = await supabase.from("organization_bootstrap_requests").insert({
     user_id: userId,
     organization_name: name,
@@ -27,6 +41,6 @@ export async function createOrganization(formData: FormData) {
     member_full_name: fullName,
     locale: "ar",
   });
-  if (error) redirect(onboardingError(error.code === "23505" ? "الرابط المختصر مستخدم، اختر غيره" : "تعذر تجهيز المؤسسة"));
+  if (error) redirect(onboardingError(error.code === "23505" ? "لديك مؤسسة بالفعل أو الرابط المختصر مستخدم" : "تعذر تجهيز المؤسسة"));
   redirect("/dashboard");
 }
