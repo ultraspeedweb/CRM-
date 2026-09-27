@@ -9,6 +9,6 @@ export async function requestPasswordReset(formData: FormData) {
   if (!email) redirect("/forgot-password?error=" + encodeURIComponent("أدخل بريدًا إلكترونيًا صحيحًا"));
   const origin = (await headers()).get("origin") ?? "http://localhost:3000";
   const supabase = await createClient();
-  await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${origin}/auth/confirm?next=/reset-password` });
+  await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${origin}/auth/recovery` });
   redirect("/forgot-password?message=" + encodeURIComponent("إذا كان الحساب موجودًا، أرسلنا رابط الاستعادة إلى البريد"));
 }
