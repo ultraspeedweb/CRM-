@@ -25,7 +25,7 @@ export default async function DashboardPage() {
     supabase.from("conversations").select("id", { count: "exact", head: true }).eq("organization_id", orgId).eq("status", "open"),
     supabase.from("deals").select("amount").eq("organization_id", orgId).neq("stage", "lost"),
     supabase.from("leads").select("id, full_name, status, score, source_channel, created_at").eq("organization_id", orgId).order("created_at", { ascending: false }).limit(6),
-    supabase.from("appointments").select("id, title, starts_at, status, leads(full_name)").eq("organization_id", orgId).gte("starts_at", nowIso).order("starts_at").limit(4),
+    supabase.from("appointments").select("id, title, starts_at, status, leads(full_name)").eq("organization_id", orgId).in("status", ["scheduled", "confirmed"]).gte("starts_at", nowIso).order("starts_at").limit(4),
     supabase.from("follow_ups").select("id", { count: "exact", head: true }).eq("organization_id", orgId).in("status", ["pending", "in_progress"]).lt("due_at", nowIso),
     supabase.from("follow_ups").select("id,subject,due_at,leads(full_name)").eq("organization_id",orgId).in("status",["pending","in_progress"]).lt("due_at",nowIso).order("due_at").limit(4),
     supabase.from("leads").select("id,full_name,score,status,created_at").eq("organization_id",orgId).in("status",["new","contacted","qualified"]).gte("score",70).order("score",{ascending:false}).limit(3),
