@@ -26,6 +26,8 @@ Every feature must strengthen this loop. No isolated screens, decorative AI, dea
 8. Export/print obey the same RBAC/RLS as UI/API access.
 9. Production READY is not Commercial GO. GO requires end-to-end production certification.
 10. Do not add unrelated features while a launch blocker is open.
+11. Compete on quality, security, reliability and measurable value, not lowest price.
+12. Platform Owner access is platform governance and does not require a customer subscription.
 
 ## 3. Competitive Direction
 
@@ -39,6 +41,8 @@ Adopt proven patterns without cloning products:
 SatışDesk differentiation target:
 
 **WhatsApp-first + Turkish-first + AI-native + simple SMB operation + strong owner control plane + auditable multi-tenant security.**
+
+Commercial positioning: premium-value operational SaaS. Pricing is value-based and cost-aware; SatışDesk does not compete primarily by being the cheapest option.
 
 ## 4. Execution State Machine
 
@@ -54,17 +58,18 @@ A workstream cannot be CLOSED if any required gate is missing.
 
 Priority: P0
 Status: ACTIVE
-Active PR: #20
+Active PR: #20 (MERGED); security hardening PR #22 (MERGED)
 
 ## Scope
 
 - Platform Owner access and authorization contract.
 - Ordinary tenant users denied `/platform` and privileged exports.
 - Platform company/subscription metadata overview.
-- CSV/Excel export with authorization boundary.
+- CSV export with authorization boundary.
 - Print / Save-as-PDF workflow.
 - Duplicate-tenant prevention / idempotent onboarding.
 - Subscription/company lifecycle visibility.
+- Platform Owner does not require a customer subscription.
 - Proven test-tenant cleanup only; preserve real owner tenant.
 - Production auth recovery and email-verification smoke tests.
 - Tenant/RBAC isolation regression tests.
@@ -85,7 +90,7 @@ Active PR: #20
 
 ## Definition of Done
 
-All tests pass; PR merged; Vercel Production maps to merge SHA; no blocking build/runtime errors; production owner flow works; unauthorized flows fail closed; tenant isolation passes; subscription lifecycle has no launch-blocking unknown state.
+All tests pass; PR merged; Vercel Production maps to merge SHA; no blocking build/runtime errors; production owner flow works; unauthorized flows fail closed; tenant isolation passes; subscription lifecycle has no launch-blocking unknown state. A null customer subscription on the Platform Owner governance identity is valid and is not a launch blocker.
 
 ---
 
@@ -249,6 +254,127 @@ Authorized external tools can perform controlled CRM operations with the same po
 
 ---
 
+# WS15 — COMMERCIAL PRICING & BILLING CONTROL PLANE
+
+Priority: P1/P2
+Status: BACKLOG — COMMERCIAL DEVELOPMENT PHASE; DO NOT INTERRUPT ACTIVE LAUNCH CLOSURE
+
+## Goal
+
+Give Platform Owner governed control of plans, services, add-ons, prices and customer subscriptions without requiring a code deployment, backed by market evidence and unit economics.
+
+## Pricing strategy
+
+Use **Value-Based + Cost-Aware Pricing**:
+
+Base Plan + included capacity + Add-ons + Usage + contract term + governed volume discounts.
+
+Dynamic intelligence is recommendation-only in the first phase. Customer billing remains deterministic, explainable and owner-controlled.
+
+## Platform Owner capabilities
+
+- Create/edit plans and monthly/annual prices.
+- Configure currencies, included users, limits and entitlements.
+- Create/edit services and add-ons and attach them to plans.
+- Publish/hide/archive plans and services without destructive deletion.
+- Mark plans public, private, custom or internal.
+- Configure trials and approved promotional periods.
+- Assign/change customer-company subscriptions with explicit confirmation and audit history.
+- Preserve effective dates and historical contracted prices.
+- View tenant commercial state without requiring Platform Owner itself to have a subscription.
+
+## Smart Pricing Engine
+
+Where measurable, recommendations consider users, WhatsApp/Meta/channel costs, AI usage/cost, automations, storage/infrastructure, branches/teams, support level, add-ons, integrations, contract duration and approved volume discounts.
+
+Platform Owner intelligence should show estimated cost-to-serve, MRR/ARR, effective price, gross margin, usage versus limits, recommended plan/add-on/price action, minimum safe-price guardrail, and explanation.
+
+**Phase 1: engine recommends; Platform Owner approves. No autonomous price or billing mutation.**
+
+## Market & Unit Economics Gate
+
+Before public pricing is certified:
+
+1. Benchmark relevant Turkish and global CRM/omnichannel/WhatsApp-first competitors.
+2. Calculate real cost-to-serve including Supabase, Vercel, AI, WhatsApp/Meta, email, storage, automation, support, payment fees, taxes and other material variable costs.
+3. Model economics at 10 / 100 / 1,000 paying tenants and representative usage bands.
+4. Define target gross-margin floor and overage/add-on economics.
+5. Validate willingness-to-pay and value positioning for target Turkish SMB segments.
+6. Approve final plans/prices through Platform Owner governance.
+
+Existing database plan prices remain provisional until this gate is complete.
+
+## Safety
+
+- Database/control plane is commercial source of truth; avoid duplicated hardcoded prices.
+- All catalog and price mutations are RBAC-protected and audited.
+- Ordinary tenants cannot mutate catalog pricing.
+- Existing customer prices cannot silently change.
+- No pricing based on protected/sensitive attributes.
+- No irreversible billing action without explicit authorization.
+- Usage metering must be idempotent and reconciled before affecting billing.
+
+## Done
+
+Platform Owner can safely govern catalog and customer subscriptions; pricing recommendations are cost-aware, value-aware, explainable and non-autonomous; public prices are supported by market study and unit economics; historical pricing and entitlement/billing boundaries are tested in Production.
+
+---
+
+# WS16 — UNIFIED EXPORT & REPORTING CONTRACT
+
+Priority: P1/P2
+Status: BACKLOG — APPLY INCREMENTALLY TO RELEVANT WORKSTREAMS
+
+## Goal
+
+Any authorized user who can legitimately work with a report or dataset can export or print that permitted data in useful professional formats without bypassing tenant or role boundaries.
+
+## Contract
+
+Relevant data/report screens should provide, where appropriate:
+
+- Real Excel `.xlsx` output, not a CSV merely labelled Excel.
+- CSV for interoperable raw/tabular workflows.
+- Print / Save-as-PDF for human-readable reports.
+
+Exports must contain only the same authorized data scope available to that user under RLS/RBAC. Export is never an alternate authorization path.
+
+## Excel quality
+
+- Structured, useful column names.
+- Correct numeric/date cell types where applicable.
+- Stable ordering and machine-usable values.
+- No UI-only decoration mixed into raw datasets.
+- Clear report/sheet naming.
+- Tenant/report/date context where useful.
+
+## Role scope
+
+- Employees export only data allowed by their role and tenant.
+- Managers export only authorized team/company reports.
+- Platform Owner exports platform metadata and commercial/operational information allowed by Platform policy, not unrestricted tenant customer content.
+
+## Target surfaces
+
+Apply progressively to CRM customers, leads, deals/opportunities, appointments, sales reports, quotes/documents, subscription/commercial reports and Platform Owner control-plane reports as those surfaces mature.
+
+## Required tests
+
+- Positive export authorization per supported role.
+- Ordinary tenant/anonymous negative cases for privileged exports.
+- Cross-tenant denial.
+- XLSX opens as a valid workbook and contains expected typed cells/headers.
+- CSV boundary/content tests.
+- Print/PDF functional smoke tests.
+- Large-report limits/timeouts handled safely.
+- Formula-injection-safe CSV/XLSX string handling where applicable.
+
+## Done
+
+Authorized users can reliably download/work with permitted data in XLSX/CSV and print/save appropriate reports as PDF, with no authorization widening or cross-tenant leakage.
+
+---
+
 # 5. Commercial Launch Gates
 
 Commercial GO requires all P0 gates:
@@ -258,8 +384,8 @@ Commercial GO requires all P0 gates:
 - Tenant isolation PASS.
 - Role boundaries PASS.
 - Platform Owner control plane PASS.
-- Export/print authorization PASS.
-- Subscription/company lifecycle has a valid commercial state.
+- Current WS7 export/print authorization PASS.
+- Subscription/company lifecycle has a valid commercial state; Platform Owner governance identity is exempt from customer-subscription requirements.
 - Required migrations applied and replay-tested.
 - Quality/DB/E2E gates PASS on merge candidate.
 - Production deployment maps to certified SHA.
@@ -299,6 +425,10 @@ Stop and require explicit approval only for destructive production data changes,
 5. WS11 — Manager Intelligence
 6. WS12 — AI Sales Copilot
 7. WS13 — Automation / Cadences / Blueprints
-8. WS14 — Integration & AI Access Layer
+8. WS15 — Commercial Pricing & Billing Control Plane
+9. WS16 — Unified Export & Reporting Contract
+10. WS14 — Integration & AI Access Layer
+
+WS15 and WS16 capture the agreed commercial pricing and universal reporting/export direction. They must not interrupt WS7 closure; relevant export requirements may be implemented incrementally when a workstream already touches that surface.
 
 This file is the execution roadmap. Update statuses and evidence as workstreams progress; do not silently redefine Done criteria to make a failing gate pass.
