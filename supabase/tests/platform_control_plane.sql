@@ -11,7 +11,13 @@ select has_table('public','organization_subscriptions','subscription source exis
 select has_table('public','billing_plans','plan and quota source exists');
 
 -- Authorization contract: prove behavior, not only object existence.
--- Synthetic UUIDs keep the test independent from production identities.
+-- Seed synthetic auth identities because platform_operators intentionally FK references auth.users.
+insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
+values
+  ('00000000-0000-4000-8000-000000000701'::uuid, '00000000-0000-0000-0000-000000000000'::uuid, 'authenticated', 'authenticated', 'platform-owner-test@satisdesk.invalid', '', now(), now(), now()),
+  ('00000000-0000-4000-8000-000000000702'::uuid, '00000000-0000-0000-0000-000000000000'::uuid, 'authenticated', 'authenticated', 'platform-disabled-test@satisdesk.invalid', '', now(), now(), now()),
+  ('00000000-0000-4000-8000-000000000799'::uuid, '00000000-0000-0000-0000-000000000000'::uuid, 'authenticated', 'authenticated', 'tenant-user-test@satisdesk.invalid', '', now(), now(), now());
+
 insert into private.platform_operators(user_id, role, status)
 values
   ('00000000-0000-4000-8000-000000000701'::uuid, 'platform_owner', 'active'),
