@@ -399,6 +399,9 @@ export type Database = {
           id: string
           lead_id: string
           lost_reason: string | null
+          next_action: string | null
+          next_action_at: string | null
+          stage_entered_at: string
           metadata: Json
           organization_id: string
           owner_user_id: string | null
@@ -416,6 +419,9 @@ export type Database = {
           id?: string
           lead_id: string
           lost_reason?: string | null
+          next_action?: string | null
+          next_action_at?: string | null
+          stage_entered_at?: string
           metadata?: Json
           organization_id: string
           owner_user_id?: string | null
@@ -433,6 +439,9 @@ export type Database = {
           id?: string
           lead_id?: string
           lost_reason?: string | null
+          next_action?: string | null
+          next_action_at?: string | null
+          stage_entered_at?: string
           metadata?: Json
           organization_id?: string
           owner_user_id?: string | null
