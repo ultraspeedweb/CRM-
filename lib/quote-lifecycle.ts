@@ -1,0 +1,1 @@
+export type QuoteStatus="draft"|"sent"|"accepted"|"rejected"|"expired";const transitions:Record<QuoteStatus,QuoteStatus[]>={draft:["sent"],sent:["accepted","rejected","expired"],accepted:[],rejected:[],expired:[]};export function canTransitionQuoteStatus(from:string,to:string){return (transitions[from as QuoteStatus]??[]).includes(to as QuoteStatus)}
