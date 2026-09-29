@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(28);
+select plan(35);
 
 -- Four isolated identities: Org A owner/agent and Org B owner/agent.
 insert into auth.users (id, email) values
@@ -24,8 +24,8 @@ insert into public.leads (id, organization_id, full_name, source_channel) values
   ('aaaaaaaa-0000-4000-8000-000000000001', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'A Lead', 'manual'),
   ('bbbbbbbb-0000-4000-8000-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'B Lead', 'manual');
 
-insert into public.deals (id, organization_id, lead_id, title, stage, probability) values
-  ('aaaaaaaa-0000-4000-8000-000000000002', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'aaaaaaaa-0000-4000-8000-000000000001', 'A Deal', 'qualification', 20);
+insert into public.deals (id, organization_id, lead_id, title, stage, probability, owner_user_id, next_action, next_action_at) values
+  ('aaaaaaaa-0000-4000-8000-000000000002', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'aaaaaaaa-0000-4000-8000-000000000001', 'A Deal', 'qualification', 20, '11111111-1111-4111-8111-111111111111', 'Call customer', now()+interval '1 day');
 
 insert into public.appointments (id, organization_id, lead_id, title, status, starts_at, ends_at) values
   ('aaaaaaaa-0000-4000-8000-000000000003', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'aaaaaaaa-0000-4000-8000-000000000001', 'A Appointment', 'scheduled', now() + interval '1 day', now() + interval '1 day 1 hour');
@@ -81,6 +81,23 @@ select results_eq(
   array[1::bigint],
   'Org B owner sees exactly one organization'
 );
+reset role;
+
+-- WS8: the database contract cannot be bypassed through direct API writes.
+set local role authenticated;
+set local request.jwt.claim.sub = '11111111-1111-4111-8111-111111111111';
+select throws_ok($$update public.deals set next_action=null where id='aaaaaaaa-0000-4000-8000-000000000002'$$,
+ '23514', 'new row for relation "deals" violates check constraint "deals_active_next_action_required"', 'Active deal cannot lose its next action');
+select throws_ok($$update public.deals set next_action='   ' where id='aaaaaaaa-0000-4000-8000-000000000002'$$,
+ '23514', 'new row for relation "deals" violates check constraint "deals_active_next_action_required"', 'Whitespace action is rejected');
+select throws_ok($$update public.deals set next_action=repeat('x',301) where id='aaaaaaaa-0000-4000-8000-000000000002'$$,
+ '23514', 'new row for relation "deals" violates check constraint "deals_active_next_action_required"', 'Oversized action is rejected');
+select throws_ok($$update public.deals set next_action_at=null where id='aaaaaaaa-0000-4000-8000-000000000002'$$,
+ '23514', 'new row for relation "deals" violates check constraint "deals_active_next_action_required"', 'Active deal requires deadline');
+select throws_ok($$update public.deals set owner_user_id=null where id='aaaaaaaa-0000-4000-8000-000000000002'$$,
+ '23514', 'new row for relation "deals" violates check constraint "deals_active_next_action_required"', 'Active deal requires owner');
+select throws_ok($$update public.deals set owner_user_id='22222222-2222-4222-8222-111111111111' where id='aaaaaaaa-0000-4000-8000-000000000002'$$,
+ '23503', null, 'Cannot assign deal to another tenant owner');
 reset role;
 
 -- SECURITY DEFINER RPCs: own-org allowed, cross-org denied.
@@ -203,5 +220,6 @@ select is(
   'Authenticated users cannot directly execute appointment lifecycle trigger function'
 );
 
+select ok((select next_action is null and next_action_at is null from public.deals where id='aaaaaaaa-0000-4000-8000-000000000002'), 'Terminal deal clears pending action');
 select * from finish();
 rollback;

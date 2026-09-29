@@ -37,11 +37,13 @@ create table if not exists public.deal_lost_reasons (
 );
 
 alter table public.deal_lost_reasons enable row level security;
+revoke all on public.deal_lost_reasons from anon;
+grant select, insert, update, delete on public.deal_lost_reasons to authenticated;
 
 drop policy if exists deal_lost_reasons_tenant_select on public.deal_lost_reasons;
 create policy deal_lost_reasons_tenant_select on public.deal_lost_reasons
 for select to authenticated
-using (private.is_active_org_user(organization_id, auth.uid()));
+using (auth.uid() is not null and private.is_active_org_user(organization_id, auth.uid()));
 
 drop policy if exists deal_lost_reasons_manager_write on public.deal_lost_reasons;
 create policy deal_lost_reasons_manager_write on public.deal_lost_reasons
@@ -59,7 +61,7 @@ with check (exists (
     and m.role in ('owner','admin','manager')
 ));
 
-create or replace function public.ws8_touch_deal_stage()
+create or replace function private.ws8_touch_deal_stage()
 returns trigger language plpgsql set search_path=pg_catalog,public as $$
 begin
   if new.stage is distinct from old.stage then
@@ -79,7 +81,8 @@ $$;
 
 drop trigger if exists ws8_deal_stage_touch on public.deals;
 create trigger ws8_deal_stage_touch before update of stage on public.deals
-for each row execute function public.ws8_touch_deal_stage();
+for each row execute function private.ws8_touch_deal_stage();
+revoke all on function private.ws8_touch_deal_stage() from public, anon, authenticated;
 
 comment on column public.deals.next_action is 'WS8 explicit next sales action for every active opportunity.';
 comment on column public.deals.next_action_at is 'WS8 deadline for the next sales action; powers Today/Next/Overdue.';

@@ -106,6 +106,18 @@ export function parseAppointmentStatusUpdate(formData: FormData) {
   return { appointmentId, status, cancellationReason: status === "cancelled" ? cancellationReason : null };
 }
 
+export function parseDealAction(formData: FormData) {
+  const ownerUserId = String(formData.get("ownerUserId") ?? "").trim();
+  const nextAction = String(formData.get("nextAction") ?? "").trim();
+  const rawDate = String(formData.get("nextActionAt") ?? "");
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(rawDate)) return null;
+  const date = parseIstanbulDateTime(rawDate);
+  if (!uuidPattern.test(ownerUserId) || !nextAction || nextAction.length > 300 || !date) return null;
+  // Reject calendar overflow (e.g. February 30), not just invalid Date values.
+  if (new Date(date.getTime() + 3 * 3600000).toISOString().slice(0,16) !== rawDate) return null;
+  return { ownerUserId, nextAction, nextActionAt: date.toISOString() };
+}
+
 export function parseDealInput(formData: FormData) {
   const leadId = String(formData.get("leadId") ?? "").trim();
   const title = String(formData.get("title") ?? "").trim().slice(0, 200);
@@ -114,7 +126,9 @@ export function parseDealInput(formData: FormData) {
   const probability = Number(formData.get("probability") ?? 20);
   if (!uuidPattern.test(leadId) || !title || !Number.isFinite(amount) || amount < 0 || !/^[A-Z]{3}$/.test(currency)) return null;
   if (!Number.isInteger(probability) || probability < 0 || probability > 100) return null;
-  return { leadId, title, amount, currency, stage: "qualification" as const, probability };
+  const action = parseDealAction(formData);
+  if (!action) return null;
+  return { leadId, title, amount, currency, stage: "qualification" as const, probability, ...action };
 }
 
 export function parseDealStageUpdate(formData: FormData) {
