@@ -1,1 +1,2 @@
 export type QuoteStatus="draft"|"sent"|"accepted"|"rejected"|"expired";const transitions:Record<QuoteStatus,QuoteStatus[]>={draft:["sent"],sent:["accepted","rejected","expired"],accepted:[],rejected:[],expired:[]};export function canTransitionQuoteStatus(from:string,to:string){return (transitions[from as QuoteStatus]??[]).includes(to as QuoteStatus)}
+export function quoteAcceptanceDealPatch(stage:string,total:number){return stage==="proposal"&&Number.isFinite(total)&&total>=0?{amount:total,stage:"negotiation" as const,probability:70}:null}
