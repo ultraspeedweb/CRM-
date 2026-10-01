@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 const copy = {
   ar: { title: "صار خطأ غير متوقع", body: "بياناتك آمنة. جرّب إعادة تحميل القسم.", retry: "إعادة المحاولة" },
@@ -22,8 +22,7 @@ function readLocale(): Locale {
 }
 
 export default function ErrorPage({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
-  const [locale, setLocale] = useState<Locale>("en");
-  useEffect(() => setLocale(readLocale()), []);
+  const [locale] = useState<Locale>(readLocale);
   const t = copy[locale];
 
   return (
