@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { resolveAuthenticatedDestination } from "@/lib/workspace-routing";
 
 function onboardingError(message: string) {
   return `/onboarding?error=${encodeURIComponent(message)}`;
@@ -20,9 +21,6 @@ export async function createOrganization(formData: FormData) {
   const userId = claims?.claims?.sub;
   if (!userId) redirect("/login");
 
-  // Onboarding is idempotent per authenticated user. A retry, double click,
-  // refreshed confirmation link, or stale browser tab must never create a
-  // second tenant for the same account.
   const { data: existingMembership, error: membershipError } = await supabase
     .from("organization_members")
     .select("organization_id")
@@ -32,7 +30,13 @@ export async function createOrganization(formData: FormData) {
     .maybeSingle();
 
   if (membershipError) redirect(onboardingError("تعذر التحقق من عضوية المؤسسة"));
-  if (existingMembership?.organization_id) redirect("/dashboard");
+  if (existingMembership?.organization_id) {
+    try {
+      redirect(await resolveAuthenticatedDestination(supabase, userId));
+    } catch {
+      redirect(onboardingError("تعذر تحديد مساحة العمل"));
+    }
+  }
 
   const { error } = await supabase.from("organization_bootstrap_requests").insert({
     user_id: userId,
@@ -42,5 +46,10 @@ export async function createOrganization(formData: FormData) {
     locale: "ar",
   });
   if (error) redirect(onboardingError(error.code === "23505" ? "لديك مؤسسة بالفعل أو الرابط المختصر مستخدم" : "تعذر تجهيز المؤسسة"));
-  redirect("/dashboard");
+
+  try {
+    redirect(await resolveAuthenticatedDestination(supabase, userId));
+  } catch {
+    redirect(onboardingError("تم تجهيز المؤسسة لكن تعذر تحديد واجهة العمل"));
+  }
 }
