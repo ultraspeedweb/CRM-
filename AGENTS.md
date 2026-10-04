@@ -19,7 +19,8 @@ Before planning or changing application code, read in this order:
 1. `docs/SATISDESK_PRODUCT_MASTER_PLAN.md` — locked product North Star.
 2. `docs/AUTONOMOUS_REVENUE_OS_EXECUTION_PLAN.md` — active workstreams, dependency order, milestones and Definition of Done.
 3. `docs/engineering/ENGINEERING_FOUNDATION.md` — engineering baseline.
-4. Load only the task-relevant skill. For UI/UX, responsive, accessibility, forms, command centers, tables or visual changes, also load `docs/engineering/skills/WEB_UI_DESIGN_SKILL.md`. For security-sensitive work, load `docs/security/PROJECT_SECURITY_SHIELD.md`.
+4. `docs/engineering/skills/DELIVERY_VERIFICATION_SKILL.md` — contract-first delivery, DB/RLS gate, Design QA, business-event standard, Golden Path and independent verification.
+5. Load only the task-relevant additional skill. For UI/UX also load `docs/engineering/skills/WEB_UI_DESIGN_SKILL.md`. For security-sensitive work load `docs/security/PROJECT_SECURITY_SHIELD.md`.
 
 Do not restart broad product discovery when these sources already define the direction.
 
@@ -29,43 +30,29 @@ SatışDesk is **not a traditional CRM**. It is a **Governed Autonomous Revenue 
 
 CRM-like entities such as customers, leads, contacts and deals remain only as useful internal commercial data primitives. Do not turn them back into the product identity or spend roadmap capacity cloning generic CRM functionality.
 
-Core loop:
+Core loop: **Sense -> Understand -> Predict -> Decide -> Policy/Approve -> Act -> Verify -> Learn**
 
-**Sense -> Understand -> Predict -> Decide -> Policy/Approve -> Act -> Verify -> Learn**
-
-User-value loop:
-
-**Signal -> Insight -> Decision -> Action -> Verified Result**
+User-value loop: **Signal -> Insight -> Decision -> Action -> Verified Result**
 
 ## Scope Discipline
 
 Every implementation task must identify:
-- Workstream ID from `docs/AUTONOMOUS_REVENUE_OS_EXECUTION_PLAN.md`.
-- Exact business problem being solved.
-- In-scope files/modules.
+- Workstream ID.
+- Exact business problem.
+- In-scope modules/files.
+- Data and permission contract.
 - Acceptance criteria / exit gate.
-- Required tests and security checks.
+- Required tests/security/design checks.
 
-Do not add adjacent features merely because they are convenient while editing the same module.
+Do not add adjacent features merely because they are convenient. Do not perform broad refactors, architecture rewrites, dependency migrations, cosmetic redesigns or new integrations unless required by the active workstream or separately approved.
 
-Do not perform broad refactors, architecture rewrites, dependency migrations, cosmetic redesigns or new integrations unless required by the active workstream or separately approved.
-
-If an unexpected issue is discovered, fix it immediately only when it blocks the active workstream, creates a security/data-integrity risk, or is a regression caused by the current change. Otherwise record/defer it and continue the active workstream.
+If an unexpected issue blocks the active workstream, creates a security/data-integrity risk, or is a regression caused by current work, fix it. Otherwise record/defer it and continue the active workstream.
 
 ## Explicit Anti-Scope
 
-Unless the product North Star is intentionally amended, do not implement:
-- Generic CRM clone work.
-- Competitor menu parity for its own sake.
-- Static dashboard/card expansion without decision/action value.
-- Decorative AI chatbot features.
-- Generic ERP/accounting expansion unrelated to revenue/growth outcomes.
-- Autonomous high-impact actions without permission, policy, audit and verification.
-- Features without a defined business problem and observable/measurable outcome where applicable.
+Do not implement generic CRM clone work, competitor menu parity, static dashboard expansion without decision/action value, decorative AI chat, generic ERP/accounting unrelated to revenue/growth, autonomous high-impact actions without governance, or features without a defined business outcome.
 
 ## Workstream Dependency Order
-
-Respect the execution plan. Current sequence:
 
 **Wave 0:** Security Shield + verification baseline.
 
@@ -83,7 +70,7 @@ Do not jump to later waves merely because they are more interesting.
 
 ## Current Priority Vertical Slice
 
-Until verified complete, prioritize this differentiated story:
+Until verified complete:
 
 **Owner sets target -> system calculates trajectory/gap -> system identifies operational drivers -> employee sees prioritized action -> action is completed -> outcome updates business state -> owner sees verified progress.**
 
@@ -93,107 +80,61 @@ Do not replace it with disconnected screens or generic dashboards.
 
 - Preserve multi-tenant isolation and deny by default.
 - Maintain RLS and role boundaries.
-- Use existing project patterns unless the active workstream requires a justified change.
 - Keep business logic deterministic/testable where possible.
-- UI must use real governed data; fake KPI theater is not completion evidence.
-- Maintain traceability from major insights/actions to underlying records.
-- AI must be tenant-scoped and permission-aware.
-- Agents cannot self-expand permissions or authority.
-- High-impact actions require configured approval/policy controls.
+- UI uses real governed data; fake KPI theater is not evidence.
+- Maintain traceability from insights/actions to records.
+- AI is tenant-scoped and permission-aware.
+- Agents cannot self-expand authority.
+- High-impact actions require approval/policy controls.
 - Material actions require auditability and outcome state.
-- Do not tightly couple SatışDesk product identity to Garfix internals; consume reusable mature capabilities through governed interfaces.
+- Do not tightly couple SatışDesk identity to Garfix internals.
 
 ## Project Security Shield Is Mandatory
 
-For touched scope, apply as relevant:
-- RLS and tenant isolation.
-- RBAC/ABAC.
-- IDOR/BOLA and privilege-escalation defenses.
-- Input/API/AI safety controls.
-- Secrets/service-role/RPC safety.
-- Webhook verification/idempotency.
-- Dependency/secret/CI gates.
-- Audit/logging/observability.
+Apply relevant RLS/tenant isolation, RBAC/ABAC, IDOR/BOLA protections, input/API/AI controls, secrets/service-role/RPC safety, webhook verification/idempotency, dependency/secret/CI gates and audit/observability. Never bypass a security gate to make a feature pass.
 
-Never bypass a security gate to make a feature pass.
+## Contract-First + Independent Verification Is Mandatory
+
+For new workstreams/material changes, use `DELIVERY_VERIFICATION_SKILL.md` before coding and before claiming completion. The builder does not commercially certify its own work. Verification is evidence-based and must cover applicable business rules, permissions, RLS, UI/UX states, regression, security/quality gates and E2E.
+
+The differentiated Golden Path becomes a commercial E2E gate as its dependent stages become real. Do not fake future stages to make it green.
 
 ## Definition of Done
 
-Do not claim completion because code or documentation exists. For applicable scope, DONE requires:
-- Business acceptance criteria satisfied.
-- Tenant/role authorization verified.
-- Deterministic business logic tested.
-- Required UI states implemented.
-- Localization maintained.
-- Audit/observability included for material actions.
-- Relevant E2E/regression tests pass.
-- Security and quality gates pass.
-- Documentation/contracts updated if behavior changed.
-- Production verification before claiming commercial readiness.
+DONE requires applicable business acceptance criteria, tenant/role authorization, deterministic tests, required UI states, localization, audit/observability, E2E/regression, security/quality gates, updated contracts/docs and production verification before commercial-readiness claims.
 
 ## Product Change Control
 
-Explicit owner/product approval is required before implementing:
-- A new major workstream.
-- A new product persona/role.
-- A new core module outside the master plan.
-- A change to the North Star/product identity.
-- A major autonomy expansion.
-- Generic ERP/finance/HR/support expansion.
-- An architecture/platform migration not required to resolve an active blocker.
-
-No developer or AI agent may rewrite the North Star merely to justify its preferred implementation.
+Explicit owner/product approval is required for a new major workstream/persona/core module outside the master plan, North Star changes, major autonomy expansion, generic ERP/finance/HR/support expansion, or architecture/platform migration not needed for an active blocker.
 
 ## New-Idea Rule
 
-Classify every new idea:
-- Supports active workstream -> include only if required for its exit gate.
-- Fits a later existing workstream -> record/defer there; do not implement now.
-- Changes product direction -> explicit approval and master-plan update first.
-- Does not serve the North Star -> reject/defer.
+- Supports active workstream -> include only if required for exit gate.
+- Fits later workstream -> record/defer.
+- Changes direction -> approval + master-plan update first.
+- Does not serve North Star -> reject/defer.
 
 Discussion does not automatically become implementation scope.
 
 ## Handoff Contract
 
-Every handoff between humans/agents/tools must state only:
-- Active workstream and milestone.
-- Branch/PR and current HEAD.
-- Verified complete work.
-- Current failing/blocking item.
-- Exact next executable step.
-- Tests/evidence/gates.
-
-Do not restart broad discovery if this information already exists.
-
-## Completion Reporting
-
-At the end of a workstream/slice, report:
-- Implemented.
-- Verified.
-- Tests/gates.
-- Remaining blocker, if any.
-- Next workstream allowed by dependency order.
-
-Avoid speculative feature lists in execution reports.
+Every handoff states only: active workstream/milestone; branch/PR/HEAD; verified complete work; current blocker; exact next executable step; tests/evidence/gates. Do not restart broad discovery if this exists.
 
 ## Source of Truth Hierarchy
-
-For product/execution scope conflicts:
 
 1. Explicit current owner instruction.
 2. `docs/SATISDESK_PRODUCT_MASTER_PLAN.md`.
 3. `docs/AUTONOMOUS_REVENUE_OS_EXECUTION_PLAN.md`.
 4. This `AGENTS.md`.
-5. Workstream-specific technical documents.
+5. Workstream-specific contracts/skills.
 6. Existing implementation patterns.
 
-Security, data integrity and production-safety gates remain mandatory even under urgent execution.
+Security, data integrity and production safety remain mandatory.
 
 ---
 
-Before coding, every contributor must be able to answer:
+Before coding answer:
 
-> **Which approved SatışDesk workstream am I advancing, what exact business outcome does this change enable, and what is its exit gate?**
+> **Which approved workstream am I advancing, what exact business outcome does it enable, and what is its exit gate?**
 
-If those answers are unclear, do not expand implementation scope.
+If unclear, do not expand scope.
