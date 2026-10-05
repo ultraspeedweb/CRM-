@@ -1,5 +1,5 @@
 begin;
-select plan(13);
+select plan(16);
 
 select has_table('private','platform_operators','platform operators are separated from tenant roles');
 select has_function('private','has_platform_role',array['text[]'],'platform role guard exists');
@@ -16,6 +16,9 @@ insert into auth.users (id, instance_id, aud, role, email, encrypted_password, e
 values
   ('00000000-0000-4000-8000-000000000701'::uuid, '00000000-0000-0000-0000-000000000000'::uuid, 'authenticated', 'authenticated', 'platform-owner-test@satisdesk.invalid', '', now(), now(), now()),
   ('00000000-0000-4000-8000-000000000702'::uuid, '00000000-0000-0000-0000-000000000000'::uuid, 'authenticated', 'authenticated', 'platform-disabled-test@satisdesk.invalid', '', now(), now(), now()),
+  ('00000000-0000-4000-8000-000000000796'::uuid, '00000000-0000-0000-0000-000000000000'::uuid, 'authenticated', 'authenticated', 'tenant-owner-test@satisdesk.invalid', '', now(), now(), now()),
+  ('00000000-0000-4000-8000-000000000797'::uuid, '00000000-0000-0000-0000-000000000000'::uuid, 'authenticated', 'authenticated', 'tenant-admin-test@satisdesk.invalid', '', now(), now(), now()),
+  ('00000000-0000-4000-8000-000000000798'::uuid, '00000000-0000-0000-0000-000000000000'::uuid, 'authenticated', 'authenticated', 'tenant-manager-test@satisdesk.invalid', '', now(), now(), now()),
   ('00000000-0000-4000-8000-000000000799'::uuid, '00000000-0000-0000-0000-000000000000'::uuid, 'authenticated', 'authenticated', 'tenant-user-test@satisdesk.invalid', '', now(), now(), now());
 
 insert into private.platform_operators(user_id, role, status)
@@ -23,12 +26,31 @@ values
   ('00000000-0000-4000-8000-000000000701'::uuid, 'platform_owner', 'active'),
   ('00000000-0000-4000-8000-000000000702'::uuid, 'platform_support', 'disabled');
 
+-- Tenant ownership/administration must never imply platform authority.
+insert into public.organizations(id, name, slug)
+values ('00000000-0000-4000-8000-000000000790'::uuid, 'WS-A Tenant Authority Test', 'ws-a-tenant-authority-test');
+
+insert into public.organization_members(organization_id, user_id, role, status)
+values
+  ('00000000-0000-4000-8000-000000000790'::uuid, '00000000-0000-4000-8000-000000000796'::uuid, 'owner', 'active'),
+  ('00000000-0000-4000-8000-000000000790'::uuid, '00000000-0000-4000-8000-000000000797'::uuid, 'admin', 'active'),
+  ('00000000-0000-4000-8000-000000000790'::uuid, '00000000-0000-4000-8000-000000000798'::uuid, 'manager', 'active');
+
 select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000701',true);
 select ok(private.has_platform_role(array['platform_owner']), 'active platform owner is authorized');
 select lives_ok($$select * from public.get_platform_company_overview()$$, 'platform owner can read platform metadata overview');
 
 select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000702',true);
 select is(private.has_platform_role(array['platform_owner','platform_support']), false, 'disabled platform operator is denied');
+
+select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000796',true);
+select is(private.has_platform_role(array['platform_owner','platform_admin','platform_support','platform_billing']), false, 'tenant owner does not gain platform authority');
+
+select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000797',true);
+select is(private.has_platform_role(array['platform_owner','platform_admin','platform_support','platform_billing']), false, 'tenant admin does not gain platform authority');
+
+select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000798',true);
+select is(private.has_platform_role(array['platform_owner','platform_admin','platform_support','platform_billing']), false, 'tenant manager does not gain platform authority');
 
 select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000799',true);
 select is(private.has_platform_role(array['platform_owner','platform_admin','platform_support','platform_billing']), false, 'ordinary authenticated tenant identity has no platform role');

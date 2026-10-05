@@ -1,0 +1,37 @@
+name: WS-A code verification
+
+on:
+  pull_request:
+
+jobs:
+  verify-code:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: test-publishable-key
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Read installed Next.js redirect guidance required by AGENTS.md
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Installed Next.js:"
+          node -p "require('./node_modules/next/package.json').version"
+          mapfile -t GUIDES < <(find node_modules/next/dist/docs -type f | grep -Ei 'redirect|route-handler|server-action' | sort)
+          if [ "${#GUIDES[@]}" -eq 0 ]; then
+            echo "No redirect/route-handler/server-action guides found under installed Next docs" >&2
+            exit 1
+          fi
+          printf 'Relevant installed Next.js guides:\n%s\n' "${GUIDES[@]}"
+          for GUIDE in "${GUIDES[@]}"; do
+            echo "===== $GUIDE ====="
+            cat "$GUIDE"
+          done
+      - name: Verify application code independently of dependency-audit blocker
+        run: npm run verify
