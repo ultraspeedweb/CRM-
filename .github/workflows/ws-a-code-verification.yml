@@ -17,5 +17,17 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - name: Read installed Next.js redirect guidance required by AGENTS.md
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Installed Next.js: $(node -p \"require('./node_modules/next/package.json').version\")"
+          GUIDE="node_modules/next/dist/docs/01-app/02-guides/redirecting.md"
+          if [ ! -f "$GUIDE" ]; then
+            echo "Redirect guide not found at expected path; available redirect-related docs:" >&2
+            find node_modules/next/dist/docs -type f | grep -Ei 'redirect|server.function|server-action|route-handler' | sort >&2
+            exit 1
+          fi
+          cat "$GUIDE"
       - name: Verify application code independently of dependency-audit blocker
         run: npm run verify
