@@ -21,13 +21,17 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "Installed Next.js: $(node -p \"require('./node_modules/next/package.json').version\")"
-          GUIDE="node_modules/next/dist/docs/01-app/02-guides/redirecting.md"
-          if [ ! -f "$GUIDE" ]; then
-            echo "Redirect guide not found at expected path; available redirect-related docs:" >&2
-            find node_modules/next/dist/docs -type f | grep -Ei 'redirect|server.function|server-action|route-handler' | sort >&2
+          echo "Installed Next.js:"
+          node -p "require('./node_modules/next/package.json').version"
+          mapfile -t GUIDES < <(find node_modules/next/dist/docs -type f | grep -Ei 'redirect|route-handler|server-action' | sort)
+          if [ "${#GUIDES[@]}" -eq 0 ]; then
+            echo "No redirect/route-handler/server-action guides found under installed Next docs" >&2
             exit 1
           fi
-          cat "$GUIDE"
+          printf 'Relevant installed Next.js guides:\n%s\n' "${GUIDES[@]}"
+          for GUIDE in "${GUIDES[@]}"; do
+            echo "===== $GUIDE ====="
+            cat "$GUIDE"
+          done
       - name: Verify application code independently of dependency-audit blocker
         run: npm run verify
