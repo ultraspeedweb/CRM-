@@ -9,6 +9,15 @@ describe("WS-A routing security contracts", () => {
     expect(source).not.toContain("redirect(await resolveAuthenticatedDestination");
   });
 
+  it("keeps onboarding redirects outside destination lookup try/catch", () => {
+    const source = fs.readFileSync("app/onboarding/actions.ts", "utf8");
+    expect(source).toContain("existingDestination = await resolveAuthenticatedDestination");
+    expect(source).toContain("createdDestination = await resolveAuthenticatedDestination");
+    expect(source).toContain("redirect(existingDestination);");
+    expect(source).toContain("redirect(createdDestination);");
+    expect(source).not.toContain("redirect(await resolveAuthenticatedDestination");
+  });
+
   it("makes email confirmation destination server-authoritative", () => {
     const source = fs.readFileSync("app/auth/confirm/route.ts", "utf8");
     expect(source).toContain("supabase.auth.verifyOtp");
