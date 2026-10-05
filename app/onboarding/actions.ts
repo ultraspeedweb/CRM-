@@ -31,11 +31,13 @@ export async function createOrganization(formData: FormData) {
 
   if (membershipError) redirect(onboardingError("تعذر التحقق من عضوية المؤسسة"));
   if (existingMembership?.organization_id) {
+    let existingDestination: string;
     try {
-      redirect(await resolveAuthenticatedDestination(supabase, userId));
+      existingDestination = await resolveAuthenticatedDestination(supabase, userId);
     } catch {
       redirect(onboardingError("تعذر تحديد مساحة العمل"));
     }
+    redirect(existingDestination);
   }
 
   const { error } = await supabase.from("organization_bootstrap_requests").insert({
@@ -47,9 +49,11 @@ export async function createOrganization(formData: FormData) {
   });
   if (error) redirect(onboardingError(error.code === "23505" ? "لديك مؤسسة بالفعل أو الرابط المختصر مستخدم" : "تعذر تجهيز المؤسسة"));
 
+  let createdDestination: string;
   try {
-    redirect(await resolveAuthenticatedDestination(supabase, userId));
+    createdDestination = await resolveAuthenticatedDestination(supabase, userId);
   } catch {
     redirect(onboardingError("تم تجهيز المؤسسة لكن تعذر تحديد واجهة العمل"));
   }
+  redirect(createdDestination);
 }
