@@ -19,11 +19,14 @@ export async function signIn(formData: FormData) {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error || !data.user) redirect(destination("error", "بيانات الدخول غير صحيحة"));
 
+  let resolvedDestination: string;
   try {
-    redirect(await resolveAuthenticatedDestination(supabase, data.user.id));
+    resolvedDestination = await resolveAuthenticatedDestination(supabase, data.user.id);
   } catch {
     redirect(destination("error", "تعذر تحديد مساحة العمل"));
   }
+
+  redirect(resolvedDestination);
 }
 
 export async function signUp(formData: FormData) {
