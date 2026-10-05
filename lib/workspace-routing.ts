@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { workspaceHomeForRole } from "@/lib/workspace-surfaces";
+import { workspaceHomeForRole } from "./workspace-surfaces";
 
 export const LEGACY_WORKSPACE_ENTRY = "/dashboard" as const;
 export const ONBOARDING_ENTRY = "/onboarding" as const;
