@@ -110,8 +110,21 @@ export async function loadRevenueGraphSnapshotForOrganization(
 ) {
   const records = await loadRevenueGraphForOrganization(supabase, organizationId);
   return {
+    version: "deal-v1" as const,
     records,
     summary: summarizeRevenueGraph(records),
     reconciliation: reconcileRevenueGraph(records),
+    capabilities: {
+      realizedRevenue: true,
+      employeeAttribution: true,
+      channelAttribution: true,
+      branchAttribution: true,
+      quoteEvidence: true,
+      productAttribution: false,
+      marginAttribution: false,
+      goalContribution: false,
+      teamAttribution: false,
+      orderAttribution: false,
+    } as const,
   };
 }
