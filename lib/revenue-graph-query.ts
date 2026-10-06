@@ -2,7 +2,6 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "./database.types";
-import type { QuoteDatabase } from "./quote-database.types";
 import { reconcileRevenueGraph, summarizeRevenueGraph, type RevenueGraphRecord } from "./revenue-graph";
 import { assembleRevenueGraphRecords } from "./revenue-graph-assembly";
 
@@ -28,7 +27,6 @@ export async function loadRevenueGraphForOrganization(
   const leadIds = [...new Set(deals.map((deal) => deal.lead_id))];
   const dealIds = deals.map((deal) => deal.id);
 
-  const quoteDb = supabase as unknown as SupabaseClient<QuoteDatabase>;
   const sourceIds: string[] = [];
 
   const [leadsResult, quotesResult] = await Promise.all([
@@ -37,7 +35,7 @@ export async function loadRevenueGraphForOrganization(
       .select("id,organization_id,branch_id,source_id,source_channel,external_ref,campaign_name,utm_source,utm_medium,utm_campaign")
       .eq("organization_id", organizationId)
       .in("id", leadIds),
-    quoteDb
+    supabase
       .from("quotes")
       .select("id,organization_id,deal_id,total,currency,accepted_at")
       .eq("organization_id", organizationId)
