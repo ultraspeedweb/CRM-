@@ -29,11 +29,12 @@ Do not create duplicate customer, employee, channel or opportunity tables for WS
 - leads.source_id -> lead_sources is the primary structured source; leads.source_channel is fallback evidence; UTM/campaign fields are supporting dimensions.
 - leads.attribution is supplemental metadata only, never an authorization source.
 - leads.branch_id is the current branch dimension.
-- Product attribution is not available until WS-G. Do not infer products from free-text quote lines.
+- Product/order/margin attribution is not available until WS-G. Do not infer products from free-text quote lines and do not invent COGS/margin.
 - Goal contribution is not available until WS-C. Do not fake it.
+- Team attribution is not yet available as a stable dimension; branch and accountable employee remain the governed dimensions for v1.
 
 ## Canonical Revenue Graph record
-organizationId, dealId, leadId, branchId, sourceId, sourceChannel, campaignName, utmSource, utmMedium, utmCampaign, ownerUserId, dealStage, dealAmount, dealCurrency, dealClosedAt, acceptedQuoteId, acceptedQuoteTotal, acceptedQuoteCurrency, acceptedQuoteAcceptedAt, revenueOutcome, revenueValue, revenueCurrency, dataQualityIssues.
+organizationId, dealId, leadId, branchId, sourceId, sourceName, sourceChannel, campaignName, utmSource, utmMedium, utmCampaign, ownerUserId, dealStage, dealStageEnteredAt, dealAmount, dealCurrency, dealClosedAt, acceptedQuoteId, acceptedQuoteTotal, acceptedQuoteCurrency, acceptedQuoteAcceptedAt, revenueOutcome, revenueValue, revenueCurrency, dataQualityIssues.
 
 ## Data-quality taxonomy
 Stable initial issue codes:
@@ -74,10 +75,12 @@ Existing lead_events remains valid evidence. A generalized ledger requires a rev
 2. Won revenue uses deal.amount and never silently substitutes quote totals.
 3. Missing actor/source/value/time attribution is surfaced with stable issue codes.
 4. Quote/deal inconsistencies are detected deterministically.
-5. Cross-tenant negative tests pass for any new database object.
-6. Any migration is generated with Supabase CLI, reviewed, and replayed from zero.
-7. Exact-candidate database, quality, code verification and E2E gates pass.
-8. Independent verifier confirms contract and implementation match.
+5. Source provenance resolves through tenant-scoped `lead_sources`; stage timing is carried for velocity/aging consumers.
+6. Assembly rejects cross-tenant rows even if an upstream query regresses.
+7. Cross-tenant negative tests pass for any new database object.
+8. Any migration is generated with Supabase CLI, reviewed, and replayed from zero.
+9. Exact-candidate database, quality, code verification and E2E gates pass.
+10. Independent verifier confirms contract and implementation match.
 
 ## Explicit out of scope
 - Goal schema/calculations (WS-C).
