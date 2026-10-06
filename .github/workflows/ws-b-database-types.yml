@@ -4,6 +4,9 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   verify-generated-types:
     runs-on: ubuntu-latest
@@ -42,11 +45,21 @@ jobs:
             /tmp/database.types.diff
           if-no-files-found: error
           retention-days: 7
+      - name: Sync generated types on WS-B branch
+        if: steps.types.outputs.stale == 'true' && github.event_name == 'pull_request' && github.head_ref == 'feat/revenue-graph-foundation-20261006'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp /tmp/database.types.ts lib/database.types.ts
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lib/database.types.ts
+          git commit -m "chore(db): refresh generated Supabase types"
+          git push origin "HEAD:${{ github.head_ref }}"
       - name: Enforce generated type sync
         if: steps.types.outputs.stale == 'true'
         run: |
-          echo "lib/database.types.ts is stale relative to local migrations." >&2
-          cat /tmp/database.types.diff >&2
+          echo "lib/database.types.ts was stale on this candidate. A scoped sync was attempted for the WS-B branch; rerun gates on the resulting head." >&2
           exit 1
       - name: Stop local Supabase
         if: always()
