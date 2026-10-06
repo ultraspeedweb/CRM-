@@ -34,7 +34,7 @@ Do not create duplicate customer, employee, channel or opportunity tables for WS
 - Team attribution is not yet available as a stable dimension; branch and accountable employee remain the governed dimensions for v1.
 
 ## Canonical Revenue Graph record
-organizationId, dealId, leadId, branchId, sourceId, sourceName, sourceChannel, campaignName, utmSource, utmMedium, utmCampaign, ownerUserId, dealStage, dealStageEnteredAt, dealAmount, dealCurrency, dealClosedAt, acceptedQuoteId, acceptedQuoteTotal, acceptedQuoteCurrency, acceptedQuoteAcceptedAt, revenueOutcome, revenueValue, revenueCurrency, dataQualityIssues.
+organizationId, dealId, leadId, branchId, sourceId, sourceName, sourceChannel, sourceExternalAccountId, leadExternalRef, campaignName, utmSource, utmMedium, utmCampaign, ownerUserId, dealStage, dealStageEnteredAt, dealAmount, dealCurrency, dealClosedAt, acceptedQuoteId, acceptedQuoteTotal, acceptedQuoteCurrency, acceptedQuoteAcceptedAt, revenueOutcome, revenueValue, revenueCurrency, dataQualityIssues.
 
 ## Data-quality taxonomy
 Stable initial issue codes:
