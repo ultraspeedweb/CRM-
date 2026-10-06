@@ -68,6 +68,11 @@ describe("Revenue Graph v1 attribution", () => {
     expect(record.revenueValue).toBe(10000);
   });
 
+  it("does not call revenue channel-attributed from a source id without a resolved channel", () => {
+    const record = buildRevenueGraphRecord({ ...base, sourceId: "source-1", sourceChannel: null });
+    expect(record.revenueValue).toBe(10000);
+    expect(canAttributeRevenueToChannel(record)).toBe(false);
+  });
   it("does not report open pipeline as realized revenue", () => {
     const record = buildRevenueGraphRecord({ ...base, dealStage: "negotiation", dealClosedAt: null });
     expect(record.revenueOutcome).toBe(false);
