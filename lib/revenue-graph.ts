@@ -94,3 +94,51 @@ export function canAttributeRevenueToEmployee(record: RevenueGraphRecord): boole
 export function canAttributeRevenueToChannel(record: RevenueGraphRecord): boolean {
   return record.revenueOutcome && record.revenueValue != null && !!(record.sourceId || record.sourceChannel) && !hasBlockingRevenueGraphIssue(record);
 }
+export type RevenueGraphCurrencySummary = {
+  currency: string;
+  realizedRevenue: number;
+  revenueOutcomeCount: number;
+  employeeAttributedRevenue: number;
+  channelAttributedRevenue: number;
+};
+
+export type RevenueGraphSummary = {
+  byCurrency: RevenueGraphCurrencySummary[];
+  qualityIssueCounts: Partial<Record<RevenueGraphIssueCode, number>>;
+  recordCount: number;
+  revenueOutcomeCount: number;
+};
+
+export function summarizeRevenueGraph(records: RevenueGraphRecord[]): RevenueGraphSummary {
+  const currencyMap = new Map<string, RevenueGraphCurrencySummary>();
+  const qualityIssueCounts: Partial<Record<RevenueGraphIssueCode, number>> = {};
+  let revenueOutcomeCount = 0;
+
+  for (const record of records) {
+    for (const issue of record.dataQualityIssues) {
+      qualityIssueCounts[issue.code] = (qualityIssueCounts[issue.code] ?? 0) + 1;
+    }
+
+    if (!record.revenueOutcome || record.revenueValue == null || hasBlockingRevenueGraphIssue(record)) continue;
+    revenueOutcomeCount += 1;
+    const summary = currencyMap.get(record.revenueCurrency) ?? {
+      currency: record.revenueCurrency,
+      realizedRevenue: 0,
+      revenueOutcomeCount: 0,
+      employeeAttributedRevenue: 0,
+      channelAttributedRevenue: 0,
+    };
+    summary.realizedRevenue += record.revenueValue;
+    summary.revenueOutcomeCount += 1;
+    if (canAttributeRevenueToEmployee(record)) summary.employeeAttributedRevenue += record.revenueValue;
+    if (canAttributeRevenueToChannel(record)) summary.channelAttributedRevenue += record.revenueValue;
+    currencyMap.set(record.revenueCurrency, summary);
+  }
+
+  return {
+    byCurrency: [...currencyMap.values()].sort((a, b) => a.currency.localeCompare(b.currency)),
+    qualityIssueCounts,
+    recordCount: records.length,
+    revenueOutcomeCount,
+  };
+}
