@@ -98,7 +98,7 @@ export function canAttributeRevenueToEmployee(record: RevenueGraphRecord): boole
 }
 
 export function canAttributeRevenueToChannel(record: RevenueGraphRecord): boolean {
-  return record.revenueOutcome && record.revenueValue != null && !!(record.sourceId || record.sourceChannel) && !hasBlockingRevenueGraphIssue(record);
+  return record.revenueOutcome && record.revenueValue != null && !!record.sourceChannel && !hasBlockingRevenueGraphIssue(record);
 }
 export type RevenueGraphCurrencySummary = {
   currency: string;
