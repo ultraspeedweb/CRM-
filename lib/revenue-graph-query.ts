@@ -13,7 +13,7 @@ export async function loadRevenueGraphForOrganization(
 ): Promise<RevenueGraphRecord[]> {
   const dealsResult = await supabase
     .from("deals")
-    .select("id,lead_id,owner_user_id,stage,amount,currency,closed_at")
+    .select("id,lead_id,owner_user_id,stage,stage_entered_at,amount,currency,closed_at")
     .eq("organization_id", organizationId)
     .order("created_at", { ascending: false });
 
@@ -28,6 +28,8 @@ export async function loadRevenueGraphForOrganization(
   const dealIds = deals.map((deal) => deal.id);
 
   const quoteDb = supabase as unknown as SupabaseClient<QuoteDatabase>;
+  const sourceIds: string[] = [];
+
   const [leadsResult, quotesResult] = await Promise.all([
     supabase
       .from("leads")
@@ -50,7 +52,22 @@ export async function loadRevenueGraphForOrganization(
     throw new Error(`Revenue Graph quote lookup failed (${quotesResult.error.code}).`);
   }
 
+  for (const lead of leadsResult.data ?? []) if (lead.source_id) sourceIds.push(lead.source_id);
+
+  const sourcesResult = sourceIds.length
+    ? await supabase
+        .from("lead_sources")
+        .select("id,name,channel")
+        .eq("organization_id", organizationId)
+        .in("id", [...new Set(sourceIds)])
+    : { data: [], error: null };
+
+  if (sourcesResult.error) {
+    throw new Error(`Revenue Graph source lookup failed (${sourcesResult.error.code}).`);
+  }
+
   const leadsById = new Map((leadsResult.data ?? []).map((lead) => [lead.id, lead]));
+  const sourcesById = new Map((sourcesResult.data ?? []).map((source) => [source.id, source]));
   type AcceptedQuoteRow = NonNullable<typeof quotesResult.data>[number];
   const acceptedQuoteByDeal = new Map<string, AcceptedQuoteRow>();
   for (const quote of quotesResult.data ?? []) {
@@ -60,6 +77,7 @@ export async function loadRevenueGraphForOrganization(
   return deals.map((deal) => {
     const lead = leadsById.get(deal.lead_id);
     const quote = acceptedQuoteByDeal.get(deal.id);
+    const source = lead?.source_id ? sourcesById.get(lead.source_id) : undefined;
 
     return buildRevenueGraphRecord({
       organizationId,
@@ -67,13 +85,15 @@ export async function loadRevenueGraphForOrganization(
       leadId: deal.lead_id,
       branchId: lead?.branch_id ?? null,
       sourceId: lead?.source_id ?? null,
-      sourceChannel: lead?.source_channel ?? null,
+      sourceChannel: source?.channel ?? lead?.source_channel ?? null,
+      sourceName: source?.name ?? null,
       campaignName: lead?.campaign_name ?? null,
       utmSource: lead?.utm_source ?? null,
       utmMedium: lead?.utm_medium ?? null,
       utmCampaign: lead?.utm_campaign ?? null,
       ownerUserId: deal.owner_user_id,
       dealStage: deal.stage,
+      dealStageEnteredAt: deal.stage_entered_at,
       dealAmount: deal.amount,
       dealCurrency: deal.currency,
       dealClosedAt: deal.closed_at,
