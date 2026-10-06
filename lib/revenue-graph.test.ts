@@ -6,6 +6,7 @@ import {
   hasBlockingRevenueGraphIssue,
   materialValueMismatch,
   summarizeRevenueGraph,
+  reconcileRevenueGraph,
 } from "./revenue-graph";
 
 const base = {
@@ -118,5 +119,29 @@ describe("Revenue Graph summary", () => {
       employeeAttributedRevenue: 10000,
       channelAttributedRevenue: 10000,
     });
+  });
+});
+describe("Revenue Graph reconciliation", () => {
+  it("separates total-revenue usability from employee/channel attribution usability", () => {
+    const incomplete = buildRevenueGraphRecord({ ...base, dealId: "deal-r1", ownerUserId: null, sourceId: null, sourceChannel: null });
+    const [row] = reconcileRevenueGraph([incomplete]);
+    expect(row.usableForTotalRevenue).toBe(true);
+    expect(row.usableForEmployeeAttribution).toBe(false);
+    expect(row.usableForChannelAttribution).toBe(false);
+    expect(row.warningIssues).toEqual(expect.arrayContaining(["missing_responsible_actor", "missing_source_attribution"]));
+  });
+
+  it("marks missing won value as unusable for all realized-revenue attribution", () => {
+    const blocked = buildRevenueGraphRecord({ ...base, dealId: "deal-r2", dealAmount: null });
+    const [row] = reconcileRevenueGraph([blocked]);
+    expect(row.usableForTotalRevenue).toBe(false);
+    expect(row.usableForEmployeeAttribution).toBe(false);
+    expect(row.usableForChannelAttribution).toBe(false);
+    expect(row.blockingIssues).toContain("missing_revenue_value");
+  });
+
+  it("ignores non-revenue pipeline records", () => {
+    const open = buildRevenueGraphRecord({ ...base, dealId: "deal-r3", dealStage: "proposal", dealClosedAt: null });
+    expect(reconcileRevenueGraph([open])).toEqual([]);
   });
 });
