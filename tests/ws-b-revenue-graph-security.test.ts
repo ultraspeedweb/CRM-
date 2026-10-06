@@ -15,9 +15,9 @@ describe("WS-B Revenue Graph query security contract", () => {
   });
 
   it("keeps quote evidence subordinate to the deal revenue contract", () => {
-    const source = fs.readFileSync("lib/revenue-graph-query.ts", "utf8");
-    expect(source).toContain("dealAmount: deal.amount");
-    expect(source).toContain("acceptedQuoteTotal: quote?.total ?? null");
+    const assembly = fs.readFileSync("lib/revenue-graph-assembly.ts", "utf8");
+    expect(assembly).toContain("dealAmount: deal.amount");
+    expect(assembly).toContain("acceptedQuoteTotal: quote?.total ?? null");
   });
 
   it("keeps unsupported downstream dimensions explicitly disabled", () => {
