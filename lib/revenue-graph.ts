@@ -142,3 +142,30 @@ export function summarizeRevenueGraph(records: RevenueGraphRecord[]): RevenueGra
     revenueOutcomeCount,
   };
 }
+export type RevenueGraphReconciliationItem = {
+  dealId: string;
+  leadId: string;
+  revenueCurrency: string;
+  revenueValue: number | null;
+  blockingIssues: RevenueGraphIssueCode[];
+  warningIssues: RevenueGraphIssueCode[];
+  usableForTotalRevenue: boolean;
+  usableForEmployeeAttribution: boolean;
+  usableForChannelAttribution: boolean;
+};
+
+export function reconcileRevenueGraph(records: RevenueGraphRecord[]): RevenueGraphReconciliationItem[] {
+  return records
+    .filter((record) => record.revenueOutcome)
+    .map((record) => ({
+      dealId: record.dealId,
+      leadId: record.leadId,
+      revenueCurrency: record.revenueCurrency,
+      revenueValue: record.revenueValue,
+      blockingIssues: record.dataQualityIssues.filter((issue) => issue.severity === "blocking").map((issue) => issue.code),
+      warningIssues: record.dataQualityIssues.filter((issue) => issue.severity === "warning").map((issue) => issue.code),
+      usableForTotalRevenue: record.revenueValue != null && !hasBlockingRevenueGraphIssue(record),
+      usableForEmployeeAttribution: canAttributeRevenueToEmployee(record),
+      usableForChannelAttribution: canAttributeRevenueToChannel(record),
+    }));
+}
