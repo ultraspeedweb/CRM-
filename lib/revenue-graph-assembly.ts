@@ -6,12 +6,12 @@ export type RevenueDealRow = {
 };
 export type RevenueLeadRow = {
   id: string; organization_id: string; branch_id: string | null; source_id: string | null; source_channel: string | null;
-  campaign_name: string | null; utm_source: string | null; utm_medium: string | null; utm_campaign: string | null;
+  external_ref: string | null; campaign_name: string | null; utm_source: string | null; utm_medium: string | null; utm_campaign: string | null;
 };
 export type RevenueQuoteRow = {
   id: string; organization_id: string; deal_id: string; total: number; currency: string; accepted_at: string | null;
 };
-export type RevenueSourceRow = { id: string; organization_id: string; name: string; channel: string };
+export type RevenueSourceRow = { id: string; organization_id: string; name: string; channel: string; external_account_id: string | null };
 
 function assertTenantRows<T extends { organization_id: string }>(organizationId: string, rows: T[], label: string): void {
   if (rows.some((row) => row.organization_id !== organizationId)) {
@@ -49,6 +49,8 @@ export function assembleRevenueGraphRecords(args: {
       sourceId: lead?.source_id ?? null,
       sourceChannel: source?.channel ?? lead?.source_channel ?? null,
       sourceName: source?.name ?? null,
+      sourceExternalAccountId: source?.external_account_id ?? null,
+      leadExternalRef: lead?.external_ref ?? null,
       campaignName: lead?.campaign_name ?? null,
       utmSource: lead?.utm_source ?? null,
       utmMedium: lead?.utm_medium ?? null,
