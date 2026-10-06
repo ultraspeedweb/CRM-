@@ -20,3 +20,11 @@ describe("WS-B Revenue Graph query security contract", () => {
     expect(source).toContain("acceptedQuoteTotal: quote?.total ?? null");
   });
 });
+  it("keeps unsupported downstream dimensions explicitly disabled", () => {
+    const source = fs.readFileSync("lib/revenue-graph-query.ts", "utf8");
+    expect(source).toContain("productAttribution: false");
+    expect(source).toContain("marginAttribution: false");
+    expect(source).toContain("goalContribution: false");
+    expect(source).toContain("teamAttribution: false");
+    expect(source).toContain("orderAttribution: false");
+  });
