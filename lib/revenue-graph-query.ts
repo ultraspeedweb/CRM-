@@ -51,7 +51,8 @@ export async function loadRevenueGraphForOrganization(
   }
 
   const leadsById = new Map((leadsResult.data ?? []).map((lead) => [lead.id, lead]));
-  const acceptedQuoteByDeal = new Map<string, (typeof quotesResult.data)[number]>();
+  type AcceptedQuoteRow = NonNullable<typeof quotesResult.data>[number];
+  const acceptedQuoteByDeal = new Map<string, AcceptedQuoteRow>();
   for (const quote of quotesResult.data ?? []) {
     if (!acceptedQuoteByDeal.has(quote.deal_id)) acceptedQuoteByDeal.set(quote.deal_id, quote);
   }
