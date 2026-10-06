@@ -5,6 +5,7 @@ import {
   canAttributeRevenueToEmployee,
   hasBlockingRevenueGraphIssue,
   materialValueMismatch,
+  summarizeRevenueGraph,
 } from "./revenue-graph";
 
 const base = {
@@ -86,5 +87,36 @@ describe("materialValueMismatch", () => {
     expect(materialValueMismatch(10000, 10050.01)).toBe(true);
     expect(materialValueMismatch(100, 101)).toBe(false);
     expect(materialValueMismatch(100, 101.01)).toBe(true);
+  });
+});
+describe("Revenue Graph summary", () => {
+  it("never mixes currencies into one revenue total", () => {
+    const tryRecord = buildRevenueGraphRecord(base);
+    const usdRecord = buildRevenueGraphRecord({ ...base, dealId: "deal-2", dealAmount: 500, dealCurrency: "USD", acceptedQuoteCurrency: "USD", acceptedQuoteTotal: 500 });
+    const summary = summarizeRevenueGraph([tryRecord, usdRecord]);
+    expect(summary.byCurrency).toEqual([
+      expect.objectContaining({ currency: "TRY", realizedRevenue: 10000 }),
+      expect.objectContaining({ currency: "USD", realizedRevenue: 500 }),
+    ]);
+  });
+
+  it("excludes blocking records from realized totals but keeps their quality evidence", () => {
+    const blocked = buildRevenueGraphRecord({ ...base, dealId: "deal-3", dealAmount: null });
+    const summary = summarizeRevenueGraph([buildRevenueGraphRecord(base), blocked]);
+    expect(summary.byCurrency).toEqual([expect.objectContaining({ currency: "TRY", realizedRevenue: 10000, revenueOutcomeCount: 1 })]);
+    expect(summary.qualityIssueCounts.missing_revenue_value).toBe(1);
+    expect(summary.recordCount).toBe(2);
+    expect(summary.revenueOutcomeCount).toBe(1);
+  });
+
+  it("only counts employee/channel attribution when those dimensions are trustworthy", () => {
+    const incomplete = buildRevenueGraphRecord({ ...base, dealId: "deal-4", ownerUserId: null, sourceId: null, sourceChannel: null });
+    const summary = summarizeRevenueGraph([buildRevenueGraphRecord(base), incomplete]);
+    expect(summary.byCurrency[0]).toMatchObject({
+      currency: "TRY",
+      realizedRevenue: 20000,
+      employeeAttributedRevenue: 10000,
+      channelAttributedRevenue: 10000,
+    });
   });
 });
