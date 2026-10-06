@@ -3,7 +3,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "./database.types";
 import type { QuoteDatabase } from "./quote-database.types";
-import { buildRevenueGraphRecord, type RevenueGraphRecord } from "./revenue-graph";
+import { buildRevenueGraphRecord, reconcileRevenueGraph, summarizeRevenueGraph, type RevenueGraphRecord } from "./revenue-graph";
 
 type AppClient = SupabaseClient<Database>;
 
@@ -82,4 +82,15 @@ export async function loadRevenueGraphForOrganization(
       acceptedQuoteAcceptedAt: quote?.accepted_at ?? null,
     });
   });
+}
+export async function loadRevenueGraphSnapshotForOrganization(
+  supabase: AppClient,
+  organizationId: string,
+) {
+  const records = await loadRevenueGraphForOrganization(supabase, organizationId);
+  return {
+    records,
+    summary: summarizeRevenueGraph(records),
+    reconciliation: reconcileRevenueGraph(records),
+  };
 }
