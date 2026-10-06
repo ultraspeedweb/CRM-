@@ -34,7 +34,7 @@ export async function loadRevenueGraphForOrganization(
   const [leadsResult, quotesResult] = await Promise.all([
     supabase
       .from("leads")
-      .select("id,organization_id,branch_id,source_id,source_channel,campaign_name,utm_source,utm_medium,utm_campaign")
+      .select("id,organization_id,branch_id,source_id,source_channel,external_ref,campaign_name,utm_source,utm_medium,utm_campaign")
       .eq("organization_id", organizationId)
       .in("id", leadIds),
     quoteDb
@@ -58,7 +58,7 @@ export async function loadRevenueGraphForOrganization(
   const sourcesResult = sourceIds.length
     ? await supabase
         .from("lead_sources")
-        .select("id,organization_id,name,channel")
+        .select("id,organization_id,name,channel,external_account_id")
         .eq("organization_id", organizationId)
         .in("id", [...new Set(sourceIds)])
     : { data: [], error: null };
