@@ -19,12 +19,14 @@ export type RevenueGraphInput = {
   branchId?: string | null;
   sourceId?: string | null;
   sourceChannel?: string | null;
+  sourceName?: string | null;
   campaignName?: string | null;
   utmSource?: string | null;
   utmMedium?: string | null;
   utmCampaign?: string | null;
   ownerUserId?: string | null;
   dealStage: string;
+  dealStageEnteredAt?: string | null;
   dealAmount?: number | null;
   dealCurrency: string;
   dealClosedAt?: string | null;
@@ -40,7 +42,9 @@ export type RevenueGraphRecord = RevenueGraphInput & {
   revenueCurrency: string;
   dataQualityIssues: RevenueGraphIssue[];
   productAttribution: "not_yet_available";
+  marginAttribution: "not_yet_available";
   goalContribution: "not_yet_available";
+  teamAttribution: "not_yet_available";
 };
 
 const MATERIAL_MISMATCH_PERCENT = 0.005;
@@ -79,7 +83,9 @@ export function buildRevenueGraphRecord(input: RevenueGraphInput): RevenueGraphR
     revenueCurrency: input.dealCurrency,
     dataQualityIssues: issues,
     productAttribution: "not_yet_available",
+    marginAttribution: "not_yet_available",
     goalContribution: "not_yet_available",
+    teamAttribution: "not_yet_available",
   };
 }
 
