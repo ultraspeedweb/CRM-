@@ -7,18 +7,20 @@ const deal = {
 };
 const lead = {
   id: "lead-1", organization_id: "org-1", branch_id: "branch-1", source_id: "source-1", source_channel: "web",
-  campaign_name: "Autumn", utm_source: "google", utm_medium: "cpc", utm_campaign: "autumn",
+  external_ref: "crm-import-42", campaign_name: "Autumn", utm_source: "google", utm_medium: "cpc", utm_campaign: "autumn",
 };
 const quote = {
   id: "quote-1", organization_id: "org-1", deal_id: "deal-1", total: 10000, currency: "TRY", accepted_at: "2026-10-05T00:00:00.000Z",
 };
-const source = { id: "source-1", organization_id: "org-1", name: "Google Ads", channel: "web" };
+const source = { id: "source-1", organization_id: "org-1", name: "Google Ads", channel: "web", external_account_id: "ads-account-7" };
 
 describe("Revenue Graph tenant-defensive assembly", () => {
   it("assembles governed provenance from same-tenant rows", () => {
     const [record] = assembleRevenueGraphRecords({ organizationId: "org-1", deals: [deal], leads: [lead], acceptedQuotes: [quote], sources: [source] });
     expect(record.sourceName).toBe("Google Ads");
     expect(record.sourceChannel).toBe("web");
+    expect(record.sourceExternalAccountId).toBe("ads-account-7");
+    expect(record.leadExternalRef).toBe("crm-import-42");
     expect(record.dealStageEnteredAt).toBe("2026-10-01T00:00:00.000Z");
     expect(record.revenueValue).toBe(10000);
   });
