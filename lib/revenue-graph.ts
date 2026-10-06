@@ -20,6 +20,8 @@ export type RevenueGraphInput = {
   sourceId?: string | null;
   sourceChannel?: string | null;
   sourceName?: string | null;
+  sourceExternalAccountId?: string | null;
+  leadExternalRef?: string | null;
   campaignName?: string | null;
   utmSource?: string | null;
   utmMedium?: string | null;
