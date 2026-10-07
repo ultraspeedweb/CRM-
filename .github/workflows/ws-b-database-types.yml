@@ -1,0 +1,55 @@
+name: WS-B generated database types
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify-generated-types:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.118.0
+      - name: Discover current type generation options
+        run: supabase gen types --help >/dev/null
+      - name: Start local Supabase
+        run: supabase start
+      - name: Replay migrations from zero
+        run: supabase db reset
+      - name: Generate canonical TypeScript database types
+        id: types
+        shell: bash
+        run: |
+          set -euo pipefail
+          supabase gen types typescript --local > /tmp/database.types.ts
+          if git diff --no-index --ignore-space-at-eol --quiet -- lib/database.types.ts /tmp/database.types.ts; then
+            echo "stale=false" >> "$GITHUB_OUTPUT"
+            : > /tmp/database.types.diff
+          else
+            echo "stale=true" >> "$GITHUB_OUTPUT"
+            git diff --no-index --ignore-space-at-eol --unified=3 -- lib/database.types.ts /tmp/database.types.ts > /tmp/database.types.diff || true
+          fi
+      - name: Upload generated types evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ws-b-generated-database-types
+          path: |
+            /tmp/database.types.ts
+            /tmp/database.types.diff
+          if-no-files-found: error
+          retention-days: 7
+      - name: Enforce generated type sync
+        if: steps.types.outputs.stale == 'true'
+        run: |
+          echo "lib/database.types.ts is stale relative to local migrations." >&2
+          exit 1
+      - name: Stop local Supabase
+        if: always()
+        run: supabase stop --no-backup
