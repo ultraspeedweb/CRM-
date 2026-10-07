@@ -17,6 +17,10 @@ Keep SatışDesk understandable, token-efficient, secure, testable and maintaina
 ## Core reusable skills
 context-engineering; Project Security Shield; secure-review; independent-verifier; incident-recovery; TDD/regression; architecture/ADR; release-engineering; Supabase multi-tenant/RLS; payments/idempotency; design/accessibility review; skill/tool provenance.
 
+## Commerce and revenue skills
+- ai-revenue-automation: load [`skills/AI_REVENUE_AUTOMATION_SKILL.md`](./skills/AI_REVENUE_AUTOMATION_SKILL.md) for AI-prioritized sales actions and bounded revenue automation.
+- commerce-signal-integration: load [`skills/COMMERCE_SIGNAL_INTEGRATION_SKILL.md`](./skills/COMMERCE_SIGNAL_INTEGRATION_SKILL.md) for Sovereign/store/POS/marketplace event ingestion into CRM.
+
 ## Context budget protocol
 Start each task with only: goal, branch/SHA, affected subsystem, relevant contracts/tests, known blocker and definition of done. Retrieve details on demand. Prefer diffs, failing tests and targeted line ranges over whole repositories or giant logs. Handoffs contain only changed facts, evidence and the next blocker.
 
