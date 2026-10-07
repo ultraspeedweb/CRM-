@@ -28,12 +28,12 @@ jobs:
         run: |
           set -euo pipefail
           supabase gen types typescript --local > /tmp/database.types.ts
-          if diff --ignore-space-at-eol --brief lib/database.types.ts /tmp/database.types.ts >/dev/null; then
+          if git diff --no-index --ignore-space-at-eol --quiet -- lib/database.types.ts /tmp/database.types.ts; then
             echo "stale=false" >> "$GITHUB_OUTPUT"
             : > /tmp/database.types.diff
           else
             echo "stale=true" >> "$GITHUB_OUTPUT"
-            diff --ignore-space-at-eol --unified lib/database.types.ts /tmp/database.types.ts > /tmp/database.types.diff || true
+            git diff --no-index --ignore-space-at-eol --unified=3 -- lib/database.types.ts /tmp/database.types.ts > /tmp/database.types.diff || true
           fi
       - name: Upload generated types evidence
         if: always()
