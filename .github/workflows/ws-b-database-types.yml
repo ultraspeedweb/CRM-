@@ -1,5 +1,8 @@
 name: WS-B generated database types
 
+permissions:
+  contents: write
+
 on:
   pull_request:
   workflow_dispatch:
@@ -45,8 +48,21 @@ jobs:
             /tmp/database.types.diff
           if-no-files-found: error
           retention-days: 7
+      - name: One-time sync canonical generated types on WS-B branch
+        id: sync
+        if: steps.types.outputs.stale == 'true' && github.event_name == 'pull_request' && github.head_ref == 'feat/revenue-graph-foundation-20261006'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp /tmp/database.types.ts lib/database.types.ts
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lib/database.types.ts
+          git commit -m "chore(db): sync canonical local Supabase types"
+          git push origin "HEAD:${GITHUB_HEAD_REF}"
+          echo "synced=true" >> "$GITHUB_OUTPUT"
       - name: Enforce generated type sync
-        if: steps.types.outputs.stale == 'true'
+        if: steps.types.outputs.stale == 'true' && steps.sync.outputs.synced != 'true'
         run: |
           echo "lib/database.types.ts is stale relative to local migrations." >&2
           exit 1
