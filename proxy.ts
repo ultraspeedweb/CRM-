@@ -9,7 +9,7 @@ export async function proxy(request: NextRequest) {
   const response = await updateSession(request);
   // Trust the parsed request URL host supplied by the deployment runtime;
   // do not use caller-controlled forwarded-host headers as an access policy.
-  if (request.nextUrl.hostname.toLowerCase() === "admin.satisdesk.com" &&
+  if (["admin.satisdesk.com", "admin-staging.satisdesk.com"].includes(request.nextUrl.hostname.toLowerCase()) &&
       request.nextUrl.pathname === "/") {
     const destination = request.nextUrl.clone();
     destination.pathname = "/platform";
