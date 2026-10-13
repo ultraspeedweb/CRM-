@@ -19,10 +19,10 @@ type PlatformRpcClient = {
   rpc: (name: "get_platform_company_overview") => Promise<{ data: unknown; error: unknown }>;
 };
 
-export async function GET(request: Request) {
+export async function GET() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.redirect(new URL("/login", request.url));
+  if (!user) return new NextResponse("Unauthorized", { status: 401, headers: { "cache-control": "no-store" } });
 
   const { data, error } = await (supabase as unknown as PlatformRpcClient).rpc("get_platform_company_overview");
   if (error || !Array.isArray(data)) return new NextResponse("Forbidden", { status: 403 });
