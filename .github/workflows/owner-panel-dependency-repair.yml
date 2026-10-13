@@ -1,0 +1,41 @@
+name: Owner panel security dependency repair (candidate)
+on:
+  push:
+    branches:
+      - chore/owner-subdomain-closure-20261013
+    paths:
+      - .github/workflows/owner-panel-dependency-repair.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - name: Generate compatible security update without forced downgrades
+        run: |
+          npm ci
+          npm install --save-exact next@16.4.0
+          npm install --save-dev --save-exact eslint-config-next@16.4.0
+          npm audit fix --package-lock-only || true
+          npm audit --json > security-audit.json || true
+          npm audit --omit=dev --audit-level=high
+          npm run verify
+      - name: Upload dependency candidate for review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: owner-dependency-candidate
+          path: |
+            package.json
+            package-lock.json
+            security-audit.json
+          retention-days: 7
