@@ -1,5 +1,5 @@
 begin;
-select plan(10);
+select plan(12);
 select has_table('private','platform_service_controls','platform service controls exist');
 select has_function('public','set_platform_service_status',array['uuid','text','text','text'],'service control RPC exists');
 select is_definer('public','set_platform_service_status',array['uuid','text','text','text'],'service control is security definer');
@@ -10,10 +10,12 @@ select has_table('public','billing_events','billing ledger remains available to 
 -- Verify authorization behavior, not just security-definer declarations.
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
 values
+('00000000-0000-4000-8000-000000000810'::uuid, '00000000-0000-0000-0000-000000000000'::uuid, 'authenticated', 'authenticated', 'service-owner-test@satisdesk.invalid', '', now(), now(), now()),
 ('00000000-0000-4000-8000-000000000811'::uuid, '00000000-0000-0000-0000-000000000000'::uuid, 'authenticated', 'authenticated', 'service-support-test@satisdesk.invalid', '', now(), now(), now()),
 ('00000000-0000-4000-8000-000000000899'::uuid, '00000000-0000-0000-0000-000000000000'::uuid, 'authenticated', 'authenticated', 'service-tenant-test@satisdesk.invalid', '', now(), now(), now());
 insert into private.platform_operators (user_id, role, status)
-values ('00000000-0000-4000-8000-000000000811'::uuid, 'platform_support', 'active');
+values ('00000000-0000-4000-8000-000000000810'::uuid, 'platform_owner', 'active'),
+('00000000-0000-4000-8000-000000000811'::uuid, 'platform_support', 'active');
 
 select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000899',true);
 select throws_ok(
@@ -30,6 +32,12 @@ select throws_ok(
   $test$select public.set_platform_service_status('00000000-0000-4000-8000-000000000001'::uuid,'whatsapp','disabled','Test restriction')$test$,
   'P0001', 'platform admin authorization required',
   'read-only platform support cannot mutate tenant service controls');
+
+select lives_ok($test$select * from public.get_platform_service_overview()$test$,
+  'active support user can inspect service overview without mutation power');
+select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000810',true);
+select lives_ok($test$select * from public.get_platform_service_overview()$test$,
+  'active platform owner can read service overview');
 
 select * from finish();
 rollback;
