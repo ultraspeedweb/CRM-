@@ -24,7 +24,10 @@ jobs:
           case "$status" in 301|302|303|307|308|401|403) ;; *) echo "Unexpected anonymous platform status: $status"; exit 1;; esac
           status=$(curl --silent --show-error --max-time 20 -o /tmp/platform-export -w '%{http_code}' "https://$host/platform/export")
           if [ "$status" != 401 ] && [ "$status" != 403 ]; then
-            echo "Anonymous platform export returned $status"; exit 1
+            echo "Anonymous export returned $status; capture the redirect target without following it"
+            curl --silent --show-error --max-time 20 -D /tmp/export-headers -o /dev/null "https://$host/platform/export"
+            grep -iE "^(location|x-vercel-id|x-vercel-protection-bypass):" /tmp/export-headers | sed -E "s/(token|secret|key)=[^&[:space:]]+/\\1=REDACTED/gi" || true
+            exit 1
           fi
           if grep -qiE '^organization_id,|^Company,Created,' /tmp/platform-export; then
             echo "Potential unauthenticated metadata export"; exit 1
