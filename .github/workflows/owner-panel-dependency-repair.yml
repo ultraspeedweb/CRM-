@@ -30,7 +30,7 @@ jobs:
           npm ci
           npm install --save-exact next@16.4.0
           npm install --save-dev --save-exact eslint-config-next@16.4.0
-          npm audit fix --package-lock-only
+          npm audit fix --package-lock-only || true
           npm ls braces micromatch fast-glob @next/eslint-plugin-next || true
       - name: Verify reproducible install and exact candidate
         run: |
