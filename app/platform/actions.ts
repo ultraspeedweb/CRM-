@@ -26,7 +26,8 @@ export async function setPlatformServiceStatus(formData: FormData) {
 
   // The SQL security-definer RPC performs the authoritative platform role
   // check and writes an audit entry in the same transaction.
-  const { error } = await supabase.rpc("set_platform_service_status", {
+  const rpc = supabase as unknown as { rpc: (name: "set_platform_service_status", args: { p_organization_id: string; p_service_key: string; p_status: string; p_reason: string | null }) => Promise<{ error: unknown }> };
+  const { error } = await rpc.rpc("set_platform_service_status", {
     p_organization_id: organizationId,
     p_service_key: serviceKey,
     p_status: status,
