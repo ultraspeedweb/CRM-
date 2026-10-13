@@ -5,6 +5,11 @@ on:
       - chore/owner-subdomain-closure-20261013
     paths:
       - .github/workflows/owner-panel-dependency-repair.yml
+  pull_request:
+    paths:
+      - .github/workflows/owner-panel-dependency-repair.yml
+      - package.json
+      - package-lock.json
   workflow_dispatch:
 
 permissions:
@@ -26,6 +31,7 @@ jobs:
           npm install --save-exact next@16.4.0
           npm install --save-dev --save-exact eslint-config-next@16.4.0
           npm audit fix --package-lock-only
+          npm ls braces micromatch fast-glob @next/eslint-plugin-next || true
       - name: Verify reproducible install and exact candidate
         run: |
           npm ci
