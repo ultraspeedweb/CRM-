@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { parsePlatformServiceStatusInput } from "./service-validation";
 
 const id = "4dd0e486-82df-4fdc-b0f3-a0aaac9fc1a4";
-function data(overrides: Record<string,string> = {}) {
+function data(overrides: Partial<Record<"organization_id" | "service_key" | "status" | "reason", string>> = {}) {
   const values = {organization_id:id,service_key:"web_inbox",status:"enabled",reason:"",...overrides};
   const form = new FormData();
   Object.entries(values).forEach(([key,value]) => form.set(key,value));
