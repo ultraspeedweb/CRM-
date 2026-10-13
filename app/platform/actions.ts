@@ -3,22 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
-const serviceKeys = ["web_inbox", "whatsapp", "ai_sales_agent", "automations", "notifications", "shopify", "woocommerce"] as const;
-const statuses = ["enabled", "disabled", "suspended"] as const;
+import { parsePlatformServiceStatusInput } from "./service-validation";
 
 export async function setPlatformServiceStatus(formData: FormData) {
-  const organizationId = String(formData.get("organization_id") ?? "");
-  const serviceKey = String(formData.get("service_key") ?? "");
-  const status = String(formData.get("status") ?? "");
-  const reason = String(formData.get("reason") ?? "").trim();
-
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(organizationId) ||
-      !serviceKeys.some((key) => key === serviceKey) ||
-      !statuses.some((value) => value === status) ||
-      reason.length > 500 ||
-      (status !== "enabled" && reason.length < 5)) {
-    throw new Error("Invalid service control request");
-  }
+  const { organizationId, serviceKey, status, reason } = parsePlatformServiceStatusInput(formData);
 
   const supabase = await createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
