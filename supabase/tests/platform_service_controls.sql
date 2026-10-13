@@ -17,17 +17,17 @@ values ('00000000-0000-4000-8000-000000000811'::uuid, 'platform_support', 'activ
 
 select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000899',true);
 select throws_ok(
-  $select public.set_platform_service_status('00000000-0000-4000-8000-000000000001'::uuid,'whatsapp','disabled','Test restriction')$,
+  $test$select public.set_platform_service_status('00000000-0000-4000-8000-000000000001'::uuid,'whatsapp','disabled','Test restriction')$test$,
   'P0001', 'platform admin authorization required',
   'ordinary tenant cannot mutate service controls');
 select throws_ok(
-  $select * from public.get_platform_service_overview()$,
+  $test$select * from public.get_platform_service_overview()$test$,
   'P0001', 'platform authorization required',
   'ordinary tenant cannot view other companies service controls');
 
 select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000811',true);
 select throws_ok(
-  $select public.set_platform_service_status('00000000-0000-4000-8000-000000000001'::uuid,'whatsapp','disabled','Test restriction')$,
+  $test$select public.set_platform_service_status('00000000-0000-4000-8000-000000000001'::uuid,'whatsapp','disabled','Test restriction')$test$,
   'P0001', 'platform admin authorization required',
   'read-only platform support cannot mutate tenant service controls');
 
