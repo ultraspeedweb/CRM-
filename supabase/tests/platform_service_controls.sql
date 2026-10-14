@@ -1,5 +1,5 @@
 begin;
-select plan(12);
+select plan(15);
 select has_table('private','platform_service_controls','platform service controls exist');
 select has_function('public','set_platform_service_status',array['uuid','text','text','text'],'service control RPC exists');
 select is_definer('public','set_platform_service_status',array['uuid','text','text','text'],'service control is security definer');
@@ -38,6 +38,19 @@ select lives_ok($test$select * from public.get_platform_service_overview()$test$
 select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000810',true);
 select lives_ok($test$select * from public.get_platform_service_overview()$test$,
   'active platform owner can read service overview');
+
+select throws_ok(
+  $test$select public.set_platform_service_status('00000000-0000-4000-8000-000000000001'::uuid,'unknown_service','disabled','Test restriction')$test$,
+  'P0001', 'unsupported service',
+  'platform owner cannot write unsupported service');
+select throws_ok(
+  $test$select public.set_platform_service_status('00000000-0000-4000-8000-000000000001'::uuid,'whatsapp','deleted','Test restriction')$test$,
+  'P0001', 'unsupported service status',
+  'platform owner cannot write unsupported status');
+select throws_ok(
+  $test$select public.set_platform_service_status('00000000-0000-4000-8000-000000000001'::uuid,'whatsapp','disabled',null)$test$,
+  'P0001', 'reason required',
+  'platform owner must supply reason to disable service');
 
 select * from finish();
 rollback;
