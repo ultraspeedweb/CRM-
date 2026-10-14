@@ -1,8 +1,21 @@
-import type { NextRequest } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/proxy";
 
+/**
+ * Routing convenience only. All platform authorization remains enforced by
+ * the page, export handler and database RPC, never by the hostname.
+ */
 export async function proxy(request: NextRequest) {
-  return updateSession(request);
+  const response = await updateSession(request);
+  // Trust the parsed request URL host supplied by the deployment runtime;
+  // do not use caller-controlled forwarded-host headers as an access policy.
+  if (["admin.satisdesk.com", "admin-staging.satisdesk.com"].includes(request.nextUrl.hostname.toLowerCase()) &&
+      request.nextUrl.pathname === "/") {
+    const destination = request.nextUrl.clone();
+    destination.pathname = "/platform";
+    return NextResponse.redirect(destination, { headers: response.headers });
+  }
+  return response;
 }
 
 export const config = {

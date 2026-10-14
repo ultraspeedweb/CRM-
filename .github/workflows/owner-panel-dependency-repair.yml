@@ -1,0 +1,64 @@
+name: Owner panel dependency patch candidate
+on:
+  push:
+    branches: [chore/owner-subdomain-closure-20261013]
+    paths: [.github/workflows/owner-panel-dependency-repair.yml]
+  pull_request:
+    paths: [.github/workflows/owner-panel-dependency-repair.yml, package.json, package-lock.json, eslint.config.mjs]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: test-publishable-key
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - name: Replace vulnerable ESLint config dependency chain in isolated checkout
+        run: |
+          npm ci
+          npm uninstall --save-dev eslint-config-next
+          npm install --save-exact next@16.4.0
+          npm install --save-dev typescript-eslint@latest eslint-plugin-react-hooks@latest eslint-plugin-jsx-a11y@latest
+          cat > eslint.config.mjs <<'EOF'
+          import { defineConfig, globalIgnores } from "eslint/config";
+          import tseslint from "typescript-eslint";
+          import reactHooks from "eslint-plugin-react-hooks";
+          import jsxA11y from "eslint-plugin-jsx-a11y";
+
+          export default defineConfig([
+            ...tseslint.configs.recommended,
+            { files: ["**/*.{js,jsx,ts,tsx}"], plugins: { "react-hooks": reactHooks, "jsx-a11y": jsxA11y },
+              rules: { ...reactHooks.configs.recommended.rules, ...jsxA11y.configs.recommended.rules } },
+            globalIgnores([".next/**", ".vercel/**", "supabase/.temp/**", "next-env.d.ts"]),
+          ]);
+          EOF
+          npm audit fix --package-lock-only || true
+          npm ls braces micromatch fast-glob || true
+      - name: Verify reproducible installation and project
+        run: |
+          npm ci
+          npm run verify
+      - name: Capture full audit
+        if: always()
+        run: npm audit --json > security-audit.json || true
+      - name: Enforce full high-severity security gate
+        run: npm audit --audit-level=high
+      - name: Upload audited candidate including ESLint configuration
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: owner-dependency-candidate
+          path: |
+            package.json
+            package-lock.json
+            eslint.config.mjs
+            security-audit.json
+          retention-days: 7
