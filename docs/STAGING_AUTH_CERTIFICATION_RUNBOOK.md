@@ -19,3 +19,11 @@ Exact application candidate `12e46867603f94800437a81446fbeb91218fe41e` has succe
 
 ## Scope caution
 This PR does not implement dynamic pricing, subscriptions billing mutation or real XLSX. Do not claim full commercial SaaS closure or paid subscription readiness merely from four green CI gates.
+
+## Hosted CRM database gap verified (2026-10-14, read-only)
+- Supabase CRM project `yafhipcokviboywaeyqi` is `ACTIVE_HEALTHY`. Administrative SQL and migration listing now work.
+- Hosted `get_platform_company_overview()` exists; `get_platform_service_overview()` and `set_platform_service_status(uuid,text,text,text)` do not exist; `private.platform_service_controls` does not exist.
+- Preflight dependencies `public.organizations`, `public.audit_logs` and `private.has_platform_role(text[])` exist. The hosted DB currently contains one organization; its main branch is default. No distinct staging database was confirmed.
+- Migration `supabase/migrations/20260926110000_add_platform_service_controls.sql` is **NOT** recorded among the 22 hosted migration entries. It must not be marked applied or certified from local CI success.
+- **HOLD**: Do not apply that migration to project `yafhipcokviboywaeyqi` until the owner or deployment inventory proves the database's environment and approves a guarded change. Preserve rollback/backup evidence and avoid testing service mutations against actual tenant data. Preferred: dedicated Staging DB with synthetic tenant and authenticated test users, apply exact migration there, then run role/audit E2E.
+- Only after the guarded hosted migration is verified should the operator certify the owner toggle UI; a deployed Preview alone cannot make the missing RPC work.
