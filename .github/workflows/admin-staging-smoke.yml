@@ -1,4 +1,4 @@
-name: Admin staging public boundary smoke
+name: Admin staging authenticated-boundary smoke
 on:
   workflow_dispatch:
   pull_request:
@@ -12,23 +12,33 @@ jobs:
   anonymous-boundaries:
     runs-on: ubuntu-latest
     timeout-minutes: 7
+    env:
+      VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.SATISDESK_STAGING_VERCEL_BYPASS }}
     steps:
-      - name: Verify DNS, HTTPS, and anonymous owner access boundaries
+      - name: Verify hosted app boundary without disabling Vercel protection
         shell: bash
         run: |
           set -euo pipefail
           host=admin-staging.satisdesk.com
           getent ahostsv4 "$host" >/dev/null
-          curl --fail --silent --show-error --max-time 20 -I "https://$host/" >/dev/null
-          status=$(curl --silent --show-error --max-time 20 -o /tmp/platform-page -w '%{http_code}' "https://$host/platform")
-          case "$status" in 301|302|303|307|308|401|403) ;; *) echo "Unexpected anonymous platform status: $status"; exit 1;; esac
-          status=$(curl --silent --show-error --max-time 20 -o /tmp/platform-export -w '%{http_code}' "https://$host/platform/export")
+          if [ -z "${VERCEL_AUTOMATION_BYPASS_SECRET:-}" ]; then
+            echo "::error::BLOCKED: configure repo Actions secret SATISDESK_STAGING_VERCEL_BYPASS with an authorized Vercel deployment-protection automation bypass; do not disable SSO."
+            exit 1
+          fi
+          # Intentionally never print or follow a protection redirect.
+          auth_header="x-vercel-protection-bypass: $VERCEL_AUTOMATION_BYPASS_SECRET"
+          status=$(curl --silent --show-error --max-time 20 -H "$auth_header" -o /tmp/platform-page -D /tmp/platform-headers -w '%{http_code}' "https://$host/platform")
+          if grep -iq '^location: https://vercel.com/sso-api' /tmp/platform-headers; then
+            echo "::error::BLOCKED: Vercel SSO intercepts authorized staging request; check secret scope/rotation."
+            exit 1
+          fi
+          case "$status" in 301|302|303|307|308|401|403) ;; *) echo "::error::Unexpected anonymous platform status: $status"; exit 1;; esac
+          status=$(curl --silent --show-error --max-time 20 -H "$auth_header" -o /tmp/platform-export -D /tmp/export-headers -w '%{http_code}' "https://$host/platform/export")
           if [ "$status" != 401 ] && [ "$status" != 403 ]; then
-            echo "Anonymous export returned $status; capture the redirect target without following it"
-            curl --silent --show-error --max-time 20 -D /tmp/export-headers -o /dev/null "https://$host/platform/export"
-            grep -iE "^(location|x-vercel-id|x-vercel-protection-bypass):" /tmp/export-headers | sed -E "s/(token|secret|key)=[^&[:space:]]+/\\1=REDACTED/gi" || true
+            echo "::error::Unauthenticated application export must return 401 or 403; got $status"
             exit 1
           fi
           if grep -qiE '^organization_id,|^Company,Created,' /tmp/platform-export; then
-            echo "Potential unauthenticated metadata export"; exit 1
+            echo "::error::Potential anonymous metadata export"
+            exit 1
           fi
