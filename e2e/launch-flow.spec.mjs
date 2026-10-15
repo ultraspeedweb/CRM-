@@ -23,3 +23,19 @@ test("commercial launch flow works UI to DB",async({page})=>{
  await page.goto(`${baseURL}/dashboard`); await submit(page,page.locator(".sidebar-bottom form")); await expect(page).toHaveURL(/\/login/); await page.locator('input[name="email"]').fill(email); await page.locator('input[name="password"]').fill(password); await submit(page,page.locator("form.stack-form")); await expect(page).toHaveURL(/\/dashboard/);
  const supabaseUrl=process.env.NEXT_PUBLIC_SUPABASE_URL,secretKey=process.env.SUPABASE_SECRET_KEY; expect(supabaseUrl).toBeTruthy();expect(secretKey).toBeTruthy(); const admin=createClient(supabaseUrl,secretKey,{auth:{persistSession:false}}); const {data:org,error:orgError}=await admin.from("organizations").select("id").eq("slug",orgSlug).single();expect(orgError).toBeNull();expect(org?.id).toBeTruthy(); const {data:lead,error:leadError}=await admin.from("leads").select("id,status").eq("organization_id",org.id).eq("full_name",leadName).single();expect(leadError).toBeNull();expect(lead?.id).toBeTruthy(); const {data:wonDeal}=await admin.from("deals").select("stage,probability,closed_at").eq("organization_id",org.id).eq("title","Launch E2E Won Deal").single();expect(wonDeal?.stage).toBe("won");expect(Number(wonDeal?.probability)).toBe(100);expect(wonDeal?.closed_at).toBeTruthy(); const {data:lostDeal}=await admin.from("deals").select("stage,probability,lost_reason,closed_at").eq("organization_id",org.id).eq("title","Launch E2E Lost Deal").single();expect(lostDeal?.stage).toBe("lost");expect(Number(lostDeal?.probability)).toBe(0);expect(lostDeal?.lost_reason).toBe("E2E customer chose another provider");expect(lostDeal?.closed_at).toBeTruthy(); const {data:completedAppointment}=await admin.from("appointments").select("status").eq("organization_id",org.id).eq("title","Launch E2E Completed Appointment").single();expect(completedAppointment?.status).toBe("completed"); const {data:cancelledAppointment}=await admin.from("appointments").select("status,cancellation_reason").eq("organization_id",org.id).eq("title","Launch E2E Cancelled Appointment").single();expect(cancelledAppointment?.status).toBe("cancelled");expect(cancelledAppointment?.cancellation_reason).toBe("E2E customer cancellation"); const {data:followUp}=await admin.from("follow_ups").select("status,completed_at").eq("organization_id",org.id).eq("subject","Launch E2E follow-up").single();expect(followUp?.status).toBe("completed");expect(followUp?.completed_at).toBeTruthy();
 });
+
+test("public buyer journey reaches the pilot offer and signup without premature checkout",async({page})=>{
+ await page.goto(baseURL);
+ await expect(page.locator('a[href="/pilot"]').first()).toBeVisible();
+ await page.locator('a[href="/pilot"]').first().click();
+ await expect(page).toHaveURL(/\/pilot$/);
+ await expect(page.locator('main')).toContainText(/50[,.]000|50,000/);
+ await expect(page.locator('main')).toContainText(/Meta/i);
+ await expect(page.locator('a[href="/login?mode=signup"]').first()).toBeVisible();
+ await page.locator('a[href="/login?mode=signup"]').first().click();
+ await expect(page).toHaveURL(/\/login\?mode=signup/);
+ await expect(page.locator('input[name="fullName"]')).toBeVisible();
+ await page.goto(`${baseURL}/pricing`);
+ await expect(page.locator('a[href="/pilot"]').first()).toBeVisible();
+ await expect(page.locator('a[href="/login?mode=signup"]')).toHaveCount(0);
+});
