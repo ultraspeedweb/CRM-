@@ -1,15 +1,15 @@
 name: Temporary isolated dependency remediation
 on:
-  push:
+  pull_request:
     branches:
-      - fix/ws7-platform-csv-formula-guard-20261015
+      - main
     paths:
       - .github/workflows/ws7-dependency-remediation.yml
 permissions:
   contents: write
 jobs:
   remediate:
-    if: github.repository == 'ultraspeedweb/CRM-' && github.ref == 'refs/heads/fix/ws7-platform-csv-formula-guard-20261015'
+    if: github.repository == 'ultraspeedweb/CRM-' && github.event.pull_request.head.ref == 'fix/ws7-platform-csv-formula-guard-20261015'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
