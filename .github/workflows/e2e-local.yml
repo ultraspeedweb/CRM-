@@ -85,7 +85,7 @@ jobs:
           exit 1
 
       - name: Run commercial browser flow
-        run: ./e2e/node_modules/.bin/playwright test e2e/launch-flow.spec.mjs --reporter=line --workers=1
+        run: ./e2e/node_modules/.bin/playwright test e2e/launch-flow.spec.mjs e2e/platform-export-guard.spec.mjs --reporter=line --workers=1
 
       - name: Print app log on failure
         if: failure()
