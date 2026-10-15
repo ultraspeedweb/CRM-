@@ -36,8 +36,15 @@ const offers = {
   }
 } as const;
 
+
+const questions = {
+ tr: { title:"Sık sorulan sorular", items:[["WhatsApp hemen çalışır mı?","Hayır. Bağlantı ancak müşterinin Meta Business yetkisi, onayı ve sağlayıcı doğrulaması tamamlandığında açılır."],["Ücret ne zaman alınır?","Yazılı kapsam, sözleşme ve fatura adımlarından sonra. Bu sayfadan ödeme alınmaz."],["Mevcut verilerimiz aktarılabilir mi?","Yalnızca şirketin yetkilendirdiği ve veri koruma şartları doğrulanmış kayıtlar; aktarım önce örnek veriyle kontrol edilir."]] },
+ ar: { title:"الأسئلة الشائعة", items:[["هل يعمل واتساب فوراً؟","لا. يبدأ الربط بعد تفويض الشركة وموافقة Meta والتحقق من جهة التكامل."],["متى يتم تحصيل الرسوم؟","بعد عرض مكتوب وعقد وفاتورة. هذه الصفحة لا تجمع مدفوعات."],["هل يمكن نقل بياناتنا القديمة؟","فقط السجلات المصرح بها وبعد التحقق من متطلبات حماية البيانات واختبار عينة أولاً."]] },
+ en: { title:"Frequently asked questions", items:[["Does WhatsApp work immediately?","No. Activation requires customer authorization, Meta approval and provider verification."],["When is payment collected?","Only after a written scope, contract and invoice. This page does not collect payments."],["Can we import existing records?","Only authorized records after a data-protection check and sample reconciliation."]] }
+} as const;
+
 export default async function PilotPage(){
- const locale=await getLocale();const c=offers[locale];
+ const locale=await getLocale();const c=offers[locale];const faq=questions[locale];
  return <main className="landing">
   <nav className="landing-nav"><Link className="logo-lockup" href="/"><span className="brand-mark">S</span><strong>SatışDesk</strong></Link><div><LanguageSwitcher locale={locale} next="/pilot"/><Link href="/pricing">{c.prices}</Link><Link href="/login" className="secondary-button">{c.login}</Link></div></nav>
   <section className="landing-hero" style={{minHeight:500}}>
