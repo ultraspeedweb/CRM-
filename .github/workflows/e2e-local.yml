@@ -22,6 +22,18 @@ jobs:
       - name: Install exact app dependencies
         run: npm ci
 
+      - name: Isolate Supabase E2E ports from default runner services
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path("supabase/config.toml")
+          source = path.read_text()
+          for old, new in [(54320, 56220), (54321, 56221), (54322, 56222), (54323, 56223), (54324, 56224), (54329, 56229)]:
+              source = source.replace(f"port = {old}", f"port = {new}")
+          path.write_text(source)
+          PY
+
       - name: Start fresh local Supabase
         run: supabase start
 
