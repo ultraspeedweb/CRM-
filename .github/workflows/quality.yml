@@ -20,7 +20,10 @@ jobs:
           cache: npm
       - id: dependencies
         run: npm ci
-      - run: npm audit --audit-level=high
+      - name: Audit deployable production dependency tree
+        run: npm audit --omit=dev --audit-level=high
+      - name: Audit entire dependency tree (including development tools)
+        run: npm audit --audit-level=high
       - name: Run independent typecheck lint tests and build even if audit fails
         if: ${{ always() && steps.dependencies.outcome == 'success' }}
         run: npm run verify
