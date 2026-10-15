@@ -16,3 +16,5 @@ jobs:
           node-version: 24
       - run: node --test scripts/research/unit-economics.test.mjs
       - run: node scripts/research/unit-economics.mjs
+      - run: node --test scripts/research/usage-economics.test.mjs
+      - run: node scripts/research/usage-economics.mjs
