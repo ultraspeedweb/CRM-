@@ -1,0 +1,20 @@
+name: Research economics validation
+on:
+  pull_request:
+    paths:
+      - 'scripts/research/**'
+      - '.github/workflows/research-economics.yml'
+jobs:
+  model-check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: node --test scripts/research/unit-economics.test.mjs
+      - run: node scripts/research/unit-economics.mjs
+      - run: node --test scripts/research/usage-economics.test.mjs
+      - run: node scripts/research/usage-economics.mjs
