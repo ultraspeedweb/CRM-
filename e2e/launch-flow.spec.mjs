@@ -13,6 +13,7 @@ async function submit(page,form){await Promise.all([page.waitForLoadState("netwo
 
 test("commercial launch flow works UI to DB",async({page})=>{
  await page.goto(`${baseURL}/login?mode=signup`); await page.locator('input[name="fullName"]').fill(ownerName); await page.locator('input[name="email"]').fill(email); await page.locator('input[name="password"]').fill(password); await submit(page,page.locator("form.stack-form")); await expect(page).toHaveURL(/\/onboarding/);
+ await expect(page.locator('input[name="name"]')).toHaveValue(""); await expect(page.locator('input[name="slug"]')).toHaveValue("");
  await page.locator('input[name="fullName"]').fill(ownerName); await page.locator('input[name="name"]').fill(orgName); await page.locator('input[name="slug"]').fill(orgSlug); await submit(page,page.locator("form.stack-form")); await expect(page).toHaveURL(/\/dashboard/);
  await page.goto(`${baseURL}/platform`); await expect(page).toHaveURL(/\/dashboard/); // Tenant owner is not Platform Owner.
  const exportDenied=await page.request.get(`${baseURL}/platform/export`,{maxRedirects:0}); expect(exportDenied.status()).toBe(403);
