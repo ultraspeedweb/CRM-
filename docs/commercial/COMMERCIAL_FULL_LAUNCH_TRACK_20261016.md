@@ -34,3 +34,8 @@ Each work item must land as tested code, product UI or verified commercial artif
 
 ## Next work packet
 Close B customer onboarding with tests for real company values, locale persistence, sign-in verification and tenant duplication; extend E2E to two-tenant role/export denial; then certify hosted Staging. In parallel prepare C real product usage demos and D payment contract readiness without collecting money early.
+
+## Hosted staging evidence — checked 2026-10-16
+Supabase account SatışDesk staging project juokgqyjdomgbofpvlfq (eu-west-3) reports ACTIVE_HEALTHY and 29 migrations installed. Read-only table metadata shows 1 organization, 1 membership, 3 billing plans, **0 organization subscriptions, 0 leads, 0 deals, 0 billing events**. These counts show setup, not a certified paid-customer lifecycle.
+Supabase security advisor reported 7 WARN notices for authenticated-callable SECURITY DEFINER RPCs and a WARN that leaked-password protection is disabled. These are review items, not proof of an exploit. Inspect explicit authorization guards, grants, and threat model for each RPC before modifying privileges. See https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable and https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection .
+Staging environment does not prove production/preview is pointing at this project; verify environment bindings before any hosted journey certification. Do not insert synthetic paid subscription/billing events to claim commercial GO.
