@@ -30,9 +30,9 @@ export default async function OnboardingPage({ searchParams }: Props) {
         <p className="muted">{t.intro}</p>
         {params.error && <div className="alert error">{params.error}</div>}
         <form className="stack-form" action={createOrganization}>
-          <label>{t.person}<input name="fullName" placeholder="مثال: أحمد يلماز" required /></label>
-          <label>{t.company}<input name="name" placeholder="اسم شركتك" required /></label>
-          <label>{t.slug}<input name="slug" placeholder="satisdesk" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" dir="ltr" required /><small>{t.slugHelp}</small></label>
+          <label>{t.person}<input name="fullName" placeholder={t.person} required /></label>
+          <label>{t.company}<input name="name" placeholder={t.company} required /></label>
+          <label>{t.slug}<input name="slug" placeholder="your-company" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" dir="ltr" required /><small>{t.slugHelp}</small></label>
           <button className="primary-button" type="submit">{t.button}</button>
         </form>
         <div className="trust-row"><CheckCircle2 size={16} /> {t.trust}</div>
