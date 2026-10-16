@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getLocale } from "@/lib/i18n";
 
 function onboardingError(message: string) {
   return `/onboarding?error=${encodeURIComponent(message)}`;
@@ -39,7 +40,7 @@ export async function createOrganization(formData: FormData) {
     organization_name: name,
     organization_slug: slug,
     member_full_name: fullName,
-    locale: "ar",
+    locale: await getLocale(),
   });
   if (error) redirect(onboardingError(error.code === "23505" ? "لديك مؤسسة بالفعل أو الرابط المختصر مستخدم" : "تعذر تجهيز المؤسسة"));
   redirect("/dashboard");
