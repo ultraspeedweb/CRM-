@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isStrongEnoughPassword } from "@/lib/validation";
+import { getLocale } from "@/lib/i18n";
 
 function destination(kind: "error" | "message", value: string) {
   return `/login?${kind}=${encodeURIComponent(value)}`;
@@ -35,7 +36,7 @@ export async function signUp(formData: FormData) {
     password,
     options: {
       emailRedirectTo: `${origin}/auth/confirm?next=/onboarding`,
-      data: { full_name: fullName, preferred_locale: "ar" },
+      data: { full_name: fullName, preferred_locale: await getLocale() },
     },
   });
   if (error) redirect(destination("error", error.message.includes("registered") ? "هذا البريد مستخدم مسبقًا" : "تعذر إنشاء الحساب"));

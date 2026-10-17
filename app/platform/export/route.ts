@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { csvCell } from "@/lib/platform-csv";
+
 
 export const dynamic = "force-dynamic";
 
@@ -18,15 +20,10 @@ type PlatformRpcClient = {
   rpc: (name: "get_platform_company_overview") => Promise<{ data: unknown; error: unknown }>;
 };
 
-function csvCell(value: unknown) {
-  const text = String(value ?? "").replace(/"/g, '""');
-  return `"${text}"`;
-}
-
-export async function GET() {
+export async function GET(request: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.redirect(new URL("/login", "https://satisdesk.com"));
+  if (!user) return NextResponse.redirect(new URL("/login", request.url));
 
   const { data, error } = await (supabase as unknown as PlatformRpcClient).rpc("get_platform_company_overview");
   if (error || !Array.isArray(data)) return new NextResponse("Forbidden", { status: 403 });
