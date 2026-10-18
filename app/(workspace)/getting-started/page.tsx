@@ -10,17 +10,24 @@ const words = {
   en: { title:"Set up your workspace",sub:"Actionable steps to get your team ready. Completion reflects your own company data.",ready:"Completed",waiting:"Next step",account:"Company workspace",team:"Prepare your team",customer:"Add your first lead",deal:"Create your first deal",follow:"Schedule a follow-up",channels:"Connect WhatsApp",plan:"Activate commercial plan",accountHint:"Your workspace is ready.",teamHint:"Add team members after invitation permissions are available.",customerHint:"Only import authorized customer records.",dealHint:"Manage an opportunity through your pipeline.",followHint:"Set a clear next action for your customer.",channelsHint:"Requires a business number and Meta approval.",planHint:"Activation requires a written offer, contract and invoice; no automatic charge.",action:"Open",note:"This checklist does not certify a paid subscription or WhatsApp connection. Tenant data remains separate." },
 } as const;
 
+type Entitlement = { subscription_status: string; is_access_active: boolean };
+type EntitlementRpc = { rpc(name: "get_subscription_entitlements", args: { p_organization_id: string }): Promise<{ data: unknown; error: unknown }> };
+
 export default async function GettingStartedPage() {
   const [{ supabase, organizationId }, locale] = await Promise.all([requireWorkspace(), getLocale()]);
   const t = words[locale];
-  const [members, leads, deals, followups, whatsapp] = await Promise.all([
+  const [members, leads, deals, followups, whatsapp, entitlements] = await Promise.all([
     supabase.from("organization_members").select("user_id", { count:"exact", head:true }).eq("organization_id",organizationId).eq("status","active"),
     supabase.from("leads").select("id", { count:"exact", head:true }).eq("organization_id",organizationId),
     supabase.from("deals").select("id", { count:"exact", head:true }).eq("organization_id",organizationId),
     supabase.from("follow_ups").select("id", { count:"exact", head:true }).eq("organization_id",organizationId),
     supabase.from("whatsapp_connections").select("id", { count:"exact", head:true }).eq("organization_id",organizationId).eq("status","active"),
+    (supabase as unknown as EntitlementRpc).rpc("get_subscription_entitlements", { p_organization_id: organizationId }),
   ]);
-  // A failed count must never appear as a completed setup step.
+  const subscription = !entitlements.error && Array.isArray(entitlements.data)
+    ? (entitlements.data as Entitlement[]).find(row => row?.subscription_status === "active" && row.is_access_active === true)
+    : undefined;
+  // A failed count or entitlement check must never appear as a completed setup step.
   const steps = [
     { label:t.account, hint:t.accountHint, done:true, href:"/dashboard" },
     { label:t.team, hint:t.teamHint, done:!members.error && (members.count??0)>1, href:"/settings" },
@@ -28,7 +35,7 @@ export default async function GettingStartedPage() {
     { label:t.deal, hint:t.dealHint, done:!deals.error && (deals.count??0)>0, href:"/deals" },
     { label:t.follow, hint:t.followHint, done:!followups.error && (followups.count??0)>0, href:"/follow-ups" },
     { label:t.channels, hint:t.channelsHint, done:!whatsapp.error && (whatsapp.count??0)>0, href:"/conversations" },
-    { label:t.plan, hint:t.planHint, done:false, href:"/pricing" },
+    { label:t.plan, hint:t.planHint, done:Boolean(subscription), href:"/pricing" },
   ];
   return <main className="content"><PageHeader title={t.title} subtitle={t.sub}/>
     <section className="panel" style={{maxWidth:900,padding:24}}>
