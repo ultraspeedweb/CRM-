@@ -13,13 +13,12 @@ const words = {
 export default async function GettingStartedPage() {
   const [{ supabase, organizationId }, locale] = await Promise.all([requireWorkspace(), getLocale()]);
   const t = words[locale];
-  const [members, leads, deals, followups, whatsapp, subscription] = await Promise.all([
+  const [members, leads, deals, followups, whatsapp] = await Promise.all([
     supabase.from("organization_members").select("user_id", { count:"exact", head:true }).eq("organization_id",organizationId).eq("status","active"),
     supabase.from("leads").select("id", { count:"exact", head:true }).eq("organization_id",organizationId),
     supabase.from("deals").select("id", { count:"exact", head:true }).eq("organization_id",organizationId),
     supabase.from("follow_ups").select("id", { count:"exact", head:true }).eq("organization_id",organizationId),
     supabase.from("whatsapp_connections").select("id", { count:"exact", head:true }).eq("organization_id",organizationId).eq("status","active"),
-    supabase.from("organization_subscriptions").select("status").eq("organization_id", organizationId).limit(1).maybeSingle(),
   ]);
   // A failed count must never appear as a completed setup step.
   const steps = [
@@ -29,7 +28,7 @@ export default async function GettingStartedPage() {
     { label:t.deal, hint:t.dealHint, done:!deals.error && (deals.count??0)>0, href:"/deals" },
     { label:t.follow, hint:t.followHint, done:!followups.error && (followups.count??0)>0, href:"/follow-ups" },
     { label:t.channels, hint:t.channelsHint, done:!whatsapp.error && (whatsapp.count??0)>0, href:"/conversations" },
-    { label:t.plan, hint:t.planHint, done:!subscription.error && subscription.data?.status==="active", href:"/pricing" },
+    { label:t.plan, hint:t.planHint, done:false, href:"/pricing" },
   ];
   return <main className="content"><PageHeader title={t.title} subtitle={t.sub}/>
     <section className="panel" style={{maxWidth:900,padding:24}}>
