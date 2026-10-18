@@ -37,6 +37,8 @@ export default async function SubscriptionPage({searchParams}:{searchParams:Prom
   const { data, error } = await (supabase as unknown as EntitlementClient).rpc("get_subscription_entitlements", { p_organization_id: organizationId });
   const rows = !error && Array.isArray(data) ? data.filter(isEntitlement) : [];
   const current = rows[0];
+  const requests = await supabase.from("commercial_activation_requests").select("id,desired_plan,status,created_at").eq("organization_id",organizationId).order("created_at",{ascending:false}).limit(5);
+  const openRequest = !requests.error && requests.data?.some(q=>["submitted","in_review","quoted"].includes(q.status));
   const items = current ? [
     [t.plan, current.plan_id],
     [t.status, current.subscription_status],
@@ -53,7 +55,8 @@ export default async function SubscriptionPage({searchParams}:{searchParams:Prom
         <dl style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(210px,1fr))",gap:20}}>
           {items.map(([label,value])=><div key={label}><dt className="muted">{label}</dt><dd style={{margin:0,fontWeight:600}}>{value}</dd></div>)}
         </dl>}
-      {canRequest && <form action={requestCommercialActivation} className="stack-form" style={{marginTop:28,maxWidth:540}}>
+      {!requests.error && Boolean(requests.data?.length) && <section style={{marginTop:24}}><h2>{locale==="ar"?"طلبات التفعيل":locale==="tr"?"Aktivasyon talepleri":"Activation requests"}</h2><ul>{requests.data?.map(q=><li key={q.id}>{q.desired_plan} · {q.status} · {new Date(q.created_at).toLocaleDateString(locale)}</li>)}</ul></section>}
+      {canRequest && !openRequest && <form action={requestCommercialActivation} className="stack-form" style={{marginTop:28,maxWidth:540}}>
         <h2>{locale==="ar"?"طلب تفعيل تجاري":locale==="tr"?"Ticari aktivasyon talebi":"Request commercial activation"}</h2>
         {result && <p role="status">{({submitted:"تم إرسال طلبك للمراجعة؛ لا يوجد تحصيل أو اشتراك تلقائي.",existing:"يوجد طلب مفتوح مسبقاً لشركتك.",invalid:"تحقق من البيانات المدخلة.",failed:"تعذر حفظ الطلب، حاول لاحقاً.",forbidden:"لا تملك صلاحية تقديم الطلب."} as Record<string,string>)[result] ?? ""}</p>}
         <label>{locale==="ar"?"البريد للتواصل":locale==="tr"?"İletişim e-postası":"Contact email"}<input type="email" name="email" required maxLength={254}/></label>
