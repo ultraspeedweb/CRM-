@@ -33,7 +33,7 @@ export async function createOrganization(formData: FormData) {
     .maybeSingle();
 
   if (membershipError) redirect(onboardingError("تعذر التحقق من عضوية المؤسسة"));
-  if (existingMembership?.organization_id) redirect("/dashboard");
+  if (existingMembership?.organization_id) redirect("/getting-started");
 
   const { error } = await supabase.from("organization_bootstrap_requests").insert({
     user_id: userId,
@@ -43,5 +43,5 @@ export async function createOrganization(formData: FormData) {
     locale: await getLocale(),
   });
   if (error) redirect(onboardingError(error.code === "23505" ? "لديك مؤسسة بالفعل أو الرابط المختصر مستخدم" : "تعذر تجهيز المؤسسة"));
-  redirect("/dashboard");
+  redirect("/getting-started");
 }
