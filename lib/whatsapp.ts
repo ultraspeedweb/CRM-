@@ -18,9 +18,9 @@ export function buildWhatsAppThreadId(phoneNumberId: string, waId: string) {
 
 /** Fail closed if the reply recipient no longer matches the original WhatsApp thread. */
 export function recipientMatchesWhatsAppThread(threadId: string | null | undefined, recipient: string | null | undefined): boolean {
-  const match = threadId?.match(/^\\d+:(\\d+)$/);
+  const match = threadId?.match(/^\d+:(\d+)$/);
   if (!match || !recipient) return false;
-  return recipient.replace(/^\\+/, "") === match[1];
+  return recipient.replace(/^\+/, "") === match[1];
 }
 
 export function getPhoneNumberIdFromThreadId(threadId: string | null | undefined) {
