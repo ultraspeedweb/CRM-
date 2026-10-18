@@ -35,7 +35,7 @@ export default async function GettingStartedPage() {
     { label:t.deal, hint:t.dealHint, done:!deals.error && (deals.count??0)>0, href:"/deals" },
     { label:t.follow, hint:t.followHint, done:!followups.error && (followups.count??0)>0, href:"/follow-ups" },
     { label:t.channels, hint:t.channelsHint, done:!whatsapp.error && (whatsapp.count??0)>0, href:"/conversations" },
-    { label:t.plan, hint:t.planHint, done:Boolean(subscription), href:"/pricing" },
+    { label:t.plan, hint:t.planHint, done:Boolean(subscription), href:"/subscription" },
   ];
   return <main className="content"><PageHeader title={t.title} subtitle={t.sub}/>
     <section className="panel" style={{maxWidth:900,padding:24}}>
