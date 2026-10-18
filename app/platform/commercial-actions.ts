@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 type Status = "submitted"|"in_review"|"quoted"|"closed";
-const nextStatus: Record<Status,Status|undefined> = {submitted:"in_review",in_review:"quoted",quoted:"closed",closed:undefined};
+const nextStatus: Record<Status,Status|undefined> = {submitted:"in_review",in_review:undefined,quoted:undefined,closed:undefined};
 export async function advanceCommercialRequest(form:FormData) {
   const id=String(form.get("requestId")??"");
   const current=String(form.get("currentStatus")??"") as Status;
@@ -12,7 +12,7 @@ export async function advanceCommercialRequest(form:FormData) {
   const supabase=await createClient();
   const { data:auth }=await supabase.auth.getUser();
   if (!auth.user) return;
-  // The existing guarded overview RPC verifies platform role at every write.
+  // Only acknowledge review start. Quoting, closing and subscription activation require an evidenced commercial workflow.\n  // The existing guarded overview RPC verifies platform role before a service-role write.
   type PlatformAuthClient = { rpc(name:"get_platform_company_overview"):Promise<{error:unknown}> };
   const {error}=await (supabase as unknown as PlatformAuthClient).rpc("get_platform_company_overview");
   if (error) return;
