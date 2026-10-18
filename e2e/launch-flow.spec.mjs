@@ -21,9 +21,9 @@ test("commercial launch flow works UI to DB",async({page})=>{
  await expect(page.locator('a[href="/getting-started"]')).toBeVisible();
  await page.locator('a[href="/getting-started"]').click();
  await expect(page).toHaveURL(/\/getting-started/);
- await expect(page.locator('a[href="/leads"]')).toBeVisible();
- await expect(page.locator('a[href="/deals"]')).toBeVisible();
- await expect(page.locator('a[href="/follow-ups"]')).toBeVisible();
+ await expect(page.locator('main a[href="/leads"]').first()).toBeVisible();
+ await expect(page.locator('main a[href="/deals"]').first()).toBeVisible();
+ await expect(page.locator('main a[href="/follow-ups"]').first()).toBeVisible();
  await expect(page.locator('a[href="/pricing"]')).toBeVisible();
  await page.goto(`${baseURL}/leads`); await page.locator('input[name="fullName"]').fill(leadName); await page.locator('input[name="phone"]').fill("+905551112233"); await page.locator('input[name="email"]').fill("lead-e2e@example.test"); await page.locator('select[name="sourceChannel"]').selectOption("manual"); await submit(page,page.locator("form.stack-form")); await expect(page.getByText(leadName)).toBeVisible();
  await page.goto(`${baseURL}/follow-ups`); await page.locator('select[name="leadId"]').selectOption({label:leadName}); await page.locator('input[name="subject"]').fill("Launch E2E follow-up"); await page.locator('input[name="dueAt"]').fill(istanbulLocalDateTime(1)); await submit(page,page.locator("form.stack-form")); const followUpRow=page.locator(".task-row").filter({hasText:"Launch E2E follow-up"}); await expect(followUpRow).toBeVisible(); const doneForm=followUpRow.locator("form").filter({has:page.getByRole("button",{name:"Done"})}); await submit(page,doneForm); await expect(followUpRow).toHaveCount(0);
