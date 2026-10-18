@@ -37,7 +37,9 @@ export default async function SubscriptionPage({searchParams}:{searchParams:Prom
   const { data, error } = await (supabase as unknown as EntitlementClient).rpc("get_subscription_entitlements", { p_organization_id: organizationId });
   const rows = !error && Array.isArray(data) ? data.filter(isEntitlement) : [];
   const current = rows[0];
-  const requests = await supabase.from("commercial_activation_requests").select("id,desired_plan,status,created_at").eq("organization_id",organizationId).order("created_at",{ascending:false}).limit(5);
+  type RequestRow = { id:string;desired_plan:string;status:string;created_at:string };
+  type IntakeReader = { from(name:"commercial_activation_requests"): { select(columns:string): { eq(column:string,value:string): { order(column:string,options:{ascending:boolean}): { limit(count:number): Promise<{data:RequestRow[]|null;error:unknown}> } } } } };
+  const requests = await (supabase as unknown as IntakeReader).from("commercial_activation_requests").select("id,desired_plan,status,created_at").eq("organization_id",organizationId).order("created_at",{ascending:false}).limit(5);
   const openRequest = !requests.error && requests.data?.some(q=>["submitted","in_review","quoted"].includes(q.status));
   const items = current ? [
     [t.plan, current.plan_id],
