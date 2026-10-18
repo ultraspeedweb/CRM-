@@ -1,3 +1,4 @@
+import { requestCommercialActivation } from "./actions";
 import Link from "next/link";
 import { CreditCard, ShieldCheck } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
@@ -27,9 +28,12 @@ function isEntitlement(value: unknown): value is Entitlement {
   const e = value as Record<string, unknown>;
   return typeof e.plan_id === "string" && typeof e.subscription_status === "string" && typeof e.is_access_active === "boolean";
 }
-export default async function SubscriptionPage() {
+export default async function SubscriptionPage({searchParams}:{searchParams:Promise<{result?:string}>}) {
   const [{ supabase, organizationId }, locale] = await Promise.all([requireWorkspace(), getLocale()]);
   const t = copy[locale];
+  const result=(await searchParams).result;
+  const { membership } = await requireWorkspace();
+  const canRequest=["owner","admin"].includes(membership.role);
   const { data, error } = await (supabase as unknown as EntitlementClient).rpc("get_subscription_entitlements", { p_organization_id: organizationId });
   const rows = !error && Array.isArray(data) ? data.filter(isEntitlement) : [];
   const current = rows[0];
@@ -49,6 +53,14 @@ export default async function SubscriptionPage() {
         <dl style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(210px,1fr))",gap:20}}>
           {items.map(([label,value])=><div key={label}><dt className="muted">{label}</dt><dd style={{margin:0,fontWeight:600}}>{value}</dd></div>)}
         </dl>}
+      {canRequest && <form action={requestCommercialActivation} className="stack-form" style={{marginTop:28,maxWidth:540}}>
+        <h2>{locale==="ar"?"طلب تفعيل تجاري":locale==="tr"?"Ticari aktivasyon talebi":"Request commercial activation"}</h2>
+        {result && <p role="status">{({submitted:"تم إرسال طلبك للمراجعة؛ لا يوجد تحصيل أو اشتراك تلقائي.",existing:"يوجد طلب مفتوح مسبقاً لشركتك.",invalid:"تحقق من البيانات المدخلة.",failed:"تعذر حفظ الطلب، حاول لاحقاً.",forbidden:"لا تملك صلاحية تقديم الطلب."} as Record<string,string>)[result] ?? ""}</p>}
+        <label>{locale==="ar"?"البريد للتواصل":locale==="tr"?"İletişim e-postası":"Contact email"}<input type="email" name="email" required maxLength={254}/></label>
+        <label>{locale==="ar"?"الباقة المطلوبة":locale==="tr"?"İstenen paket":"Requested plan"}<select name="plan" required><option value="pilot">Pilot</option><option value="starter">Starter</option><option value="growth">Growth</option><option value="business">Business</option><option value="enterprise">Enterprise</option></select></label>
+        <label>{locale==="ar"?"الاحتياج (اختياري)":locale==="tr"?"İhtiyaçlar (isteğe bağlı)":"Requirements (optional)"}<textarea name="notes" maxLength={1000} rows={3}/></label>
+        <button className="primary-button" type="submit">{locale==="ar"?"إرسال طلب المراجعة":locale==="tr"?"İnceleme talebi gönder":"Submit for review"}</button>
+      </form>}
       <div style={{display:"flex",gap:12,flexWrap:"wrap",marginTop:24}}><Link href="/pilot" className="primary-button">{t.pilot}</Link><Link href="/pricing" className="secondary-button">{t.view}</Link></div>
     </section>
     <p className="muted" style={{maxWidth:830,marginTop:18}}><ShieldCheck size={16} style={{display:"inline",verticalAlign:"middle",marginInlineEnd:7}}/>{t.note}</p>
