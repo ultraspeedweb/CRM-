@@ -13,7 +13,8 @@ export async function advanceCommercialRequest(form:FormData) {
   const { data:auth }=await supabase.auth.getUser();
   if (!auth.user) return;
   // The existing guarded overview RPC verifies platform role at every write.
-  const {error}=await supabase.rpc("get_platform_company_overview");
+  type PlatformAuthClient = { rpc(name:"get_platform_company_overview"):Promise<{error:unknown}> };
+  const {error}=await (supabase as unknown as PlatformAuthClient).rpc("get_platform_company_overview");
   if (error) return;
   type Table={from(name:"commercial_activation_requests"):{update(values:{status:Status}):{eq(column:string,value:string):{eq(column:string,value:string):Promise<{error:unknown;count:number|null}>}}}};
   const admin=createAdminClient() as unknown as Table;
