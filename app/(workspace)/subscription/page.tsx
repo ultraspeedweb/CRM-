@@ -41,6 +41,9 @@ export default async function SubscriptionPage({searchParams}:{searchParams:Prom
   type IntakeReader = { from(name:"commercial_activation_requests"): { select(columns:string): { eq(column:string,value:string): { order(column:string,options:{ascending:boolean}): { limit(count:number): Promise<{data:RequestRow[]|null;error:unknown}> } } } } };
   const requests = await (supabase as unknown as IntakeReader).from("commercial_activation_requests").select("id,desired_plan,status,created_at").eq("organization_id",organizationId).order("created_at",{ascending:false}).limit(5);
   const openRequest = !requests.error && requests.data?.some(q=>["submitted","in_review","quoted"].includes(q.status));
+  type Offer={id:string;state:string;amount_minor:number;currency:string;scope:string;valid_until:string};
+  type OfferReader={from(name:"commercial_proposals"):{select(columns:string):{eq(column:string,value:string):{order(column:string,options:{ascending:boolean}):{limit(n:number):Promise<{data:Offer[]|null;error:unknown}>}}}}};
+  const offers=await (supabase as unknown as OfferReader).from("commercial_proposals").select("id,state,amount_minor,currency,scope,valid_until").eq("organization_id",organizationId).order("created_at",{ascending:false}).limit(5);
   const items = current ? [
     [t.plan, current.plan_id],
     [t.status, current.subscription_status],
@@ -57,6 +60,7 @@ export default async function SubscriptionPage({searchParams}:{searchParams:Prom
         <dl style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(210px,1fr))",gap:20}}>
           {items.map(([label,value])=><div key={label}><dt className="muted">{label}</dt><dd style={{margin:0,fontWeight:600}}>{value}</dd></div>)}
         </dl>}
+      {!offers.error && Boolean(offers.data?.length) && <section style={{marginTop:24}}><h2>{locale==="ar"?"العروض التجارية المتاحة":locale==="tr"?"Yayınlanan teklifler":"Published commercial offers"}</h2>{offers.data?.filter(o=>o.state==="published").map(o=><article className="panel" key={o.id} style={{padding:16,marginTop:12}}><strong>{o.currency} {(o.amount_minor/100).toFixed(2)}</strong><p style={{whiteSpace:"pre-wrap",overflowWrap:"anywhere"}}>{o.scope}</p><small>{locale==="ar"?"صالح حتى":locale==="tr"?"Geçerli":"Valid until"} {o.valid_until}</small><p className="muted">{locale==="ar"?"عرض سعر للمراجعة فقط، لا يمثل فاتورة أو عقداً أو دفعاً.":locale==="tr"?"Bu teklif fatura, sözleşme veya ödeme onayı değildir.":"Quotation only; not an invoice, contract or payment confirmation."}</p></article>)}</section>}
       {!requests.error && Boolean(requests.data?.length) && <section style={{marginTop:24}}><h2>{locale==="ar"?"طلبات التفعيل":locale==="tr"?"Aktivasyon talepleri":"Activation requests"}</h2><ul>{requests.data?.map(q=><li key={q.id}>{q.desired_plan} · {q.status} · {new Date(q.created_at).toLocaleDateString(locale)}</li>)}</ul></section>}
       {canRequest && !openRequest && <form action={requestCommercialActivation} className="stack-form" style={{marginTop:28,maxWidth:540}}>
         <h2>{locale==="ar"?"طلب تفعيل تجاري":locale==="tr"?"Ticari aktivasyon talebi":"Request commercial activation"}</h2>
