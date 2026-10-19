@@ -12,12 +12,12 @@ export async function advanceCommercialRequest(form:FormData) {
   const supabase=await createClient();
   const { data:auth }=await supabase.auth.getUser();
   if (!auth.user) return;
-  // Only acknowledge review start. Quoting, closing and subscription activation require an evidenced commercial workflow.\n  // The existing guarded overview RPC verifies platform role before a service-role write.
+  // Review only. Quoting, closing and activation require a verified commercial workflow.
   type PlatformAuthClient = { rpc(name:"get_platform_company_overview"):Promise<{error:unknown}> };
   const {error}=await (supabase as unknown as PlatformAuthClient).rpc("get_platform_company_overview");
   if (error) return;
-  type Table={from(name:"commercial_activation_requests"):{update(values:{status:Status}):{eq(column:string,value:string):{eq(column:string,value:string):Promise<{error:unknown;count:number|null}>}}}};
+  type Table={from(name:"commercial_activation_requests"):{update(values:{status:Status;reviewed_by:string;reviewed_at:string}):{eq(column:string,value:string):{eq(column:string,value:string):Promise<{error:unknown;count:number|null}>}}}};
   const admin=createAdminClient() as unknown as Table;
-  const {error:updateError}=await admin.from("commercial_activation_requests").update({status:nextStatus[current]!}).eq("id",id).eq("status",current);
+  const {error:updateError}=await admin.from("commercial_activation_requests").update({status:nextStatus[current]!,reviewed_by:auth.user.id,reviewed_at:new Date().toISOString()}).eq("id",id).eq("status",current);
   if (!updateError) revalidatePath("/platform");
 }
