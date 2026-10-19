@@ -21,7 +21,7 @@ export async function createProposalDraft(form:FormData) {
  const validUntil=String(form.get("validUntil")??"");
  if (!/^[0-9a-f-]{36}$/i.test(id) || !/^[1-9][0-9]{0,10}$/.test(amount) ||
      !["TRY","USD","EUR"].includes(currency) || scope.length<20 || scope.length>3000 ||
-     !/^\\d{4}-\\d{2}-\\d{2}$/.test(validUntil)) return;
+     !/^\d{4}-\d{2}-\d{2}$/.test(validUntil)) return;
  const supabase=await createClient();
  type ProposalRpc={rpc(name:"create_commercial_proposal_draft",args:{p_request_id:string;p_amount_minor:number;p_currency:string;p_scope:string;p_valid_until:string}):Promise<{error:unknown}>};
  const {error}=await (supabase as unknown as ProposalRpc).rpc("create_commercial_proposal_draft",{
