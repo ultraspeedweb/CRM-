@@ -17,6 +17,13 @@ test("commercial launch flow works UI to DB",async({page})=>{
  await page.locator('input[name="fullName"]').fill(ownerName); await page.locator('input[name="name"]').fill(orgName); await page.locator('input[name="slug"]').fill(orgSlug); await submit(page,page.locator("form.stack-form")); await expect(page).toHaveURL(/\/getting-started/); await expect(page.locator('main a[href="/leads"]').first()).toBeVisible();
  await page.goto(`${baseURL}/platform`); await expect(page).toHaveURL(/\/dashboard/); // Tenant owner is not Platform Owner.
  const exportDenied=await page.request.get(`${baseURL}/platform/export`,{maxRedirects:0}); expect(exportDenied.status()).toBe(403);
+ // Operational launch acceptance must cover the product beyond billing and CRM.
+ for (const route of ["/dashboard","/conversations","/automation","/notifications","/reports"]) {
+  await page.goto(`${baseURL}${route}`);
+  await expect(page.locator("main")).toBeVisible();
+  await expect(page.locator("main h1").first()).toBeVisible();
+  await expect(page.locator("body")).not.toContainText("Application error");
+ }
  await page.goto(`${baseURL}/settings`); await expect(page.locator("main")).toBeVisible();
  await expect(page.locator('a[href="/getting-started"]')).toBeVisible();
  await page.locator('a[href="/getting-started"]').click();
