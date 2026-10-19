@@ -29,3 +29,12 @@ export async function createProposalDraft(form:FormData) {
  });
  if(!error) revalidatePath("/platform");
 }
+
+export async function publishCommercialProposal(form:FormData) {
+ const id=String(form.get("proposalId")??"");
+ if(!/^[0-9a-f-]{36}$/i.test(id)) return;
+ const supabase=await createClient();
+ type PublicationRpc={rpc(name:"publish_commercial_proposal",args:{p_proposal_id:string}):Promise<{data:boolean|null;error:unknown}>};
+ const {data,error}=await (supabase as unknown as PublicationRpc).rpc("publish_commercial_proposal",{p_proposal_id:id});
+ if(!error&&data===true) revalidatePath("/platform");
+}
