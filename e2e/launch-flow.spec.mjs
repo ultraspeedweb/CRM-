@@ -22,6 +22,7 @@ test("commercial launch flow works UI to DB",async({page})=>{
   await page.goto(`${baseURL}${route}`);
   await expect(page.locator("main")).toBeVisible();
   await expect(page.locator("main h1").first()).toBeVisible();
+  if(route==="/automation") await expect(page.locator("main")).toContainText(/Automation execution history|سجل تشغيل الأتمتة|Otomasyon çalıştırma geçmişi/);
   await expect(page.locator("body")).not.toContainText("Application error");
  }
  await page.goto(`${baseURL}/settings`); await expect(page.locator("main")).toBeVisible();
