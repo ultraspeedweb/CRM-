@@ -2,7 +2,7 @@
 Date: 2026-10-16. Owner: commercial release. Single source of truth for PR #40 and follow-on work. **Not a launch certificate.**
 
 ## Commercial outcome
-One authorized paying pilot company can discover the product, receive an accurate written offer, register and verify an account, create its own isolated workspace, onboard its permitted leads, complete a real sales workflow, access support, sign a contract and pay through a certified collection process, without exposing other tenants.
+One authorized pilot company can register and verify an account, create an isolated workspace, onboard permitted leads, operate sales, use its inbox and automation controls, and access support without exposing other tenants. The Platform Owner can manage company metadata under a separate role. AI and external integrations stay disabled until individually certified. Operational launch does not require payment collection; the paid commercial lifecycle has separate acceptance gates.
 
 ## Release phases — sequential, evidence-required
 | Phase | Deliverable | Closure proof | State |
@@ -25,8 +25,8 @@ One authorized paying pilot company can discover the product, receive an accurat
 ## Non-negotiable launch blockers
 1. Fix or formally disposition full high-severity dependency audit without suppressing detection.
 2. Certify production-equivalent hosted Auth, verification/resend/recovery, Platform Owner, ordinary tenant denies, data export and isolation with test identities.
-3. Price is provisional. Obtain validated unit economics and owner-approved legally usable offer/terms; tax and pass-through costs explicit.
-4. Verify deterministic subscription activation and payment provider sandbox then authorized production purchase/callback/refund/reconciliation. No fake payments or implied automatic billing.
+3. Paid offer approval only: price is provisional; require validated unit economics and owner-approved usable offer/terms before collecting money. Operational testing remains available without a paid plan.
+4. Paid commercial launch only: verify deterministic subscription activation and provider sandbox, then authorized production purchase/callback/refund/reconciliation. Payment is not an operational-launch prerequisite. No fake payments or implied automatic billing.
 5. Verify responsive/mobile/PWA, browser caching, help/support contacts and deployment rollback.
 
 ## Execution discipline

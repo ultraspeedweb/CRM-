@@ -22,7 +22,9 @@
     "react": "19.2.9",
     "react-dom": "19.2.9"
   },
+  "overrides": { "fast-glob": "$fast-glob" },
   "devDependencies": {
+    "fast-glob": "file:tools/next-lint-glob",
     "@types/node": "26.3.0",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.5",

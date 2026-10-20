@@ -9,6 +9,8 @@ jobs:
   commercial-flow:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      WEB_INTAKE_SECRET: disposable-local-intake-test-only
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -85,7 +87,7 @@ jobs:
           exit 1
 
       - name: Run commercial browser flow
-        run: ./e2e/node_modules/.bin/playwright test e2e/launch-flow.spec.mjs e2e/platform-export-guard.spec.mjs e2e/sovereign-ingress.spec.mjs --reporter=line --workers=1
+        run: ./e2e/node_modules/.bin/playwright test e2e/launch-flow.spec.mjs e2e/operational-services.spec.mjs e2e/platform-export-guard.spec.mjs e2e/sovereign-ingress.spec.mjs --reporter=line --workers=1
 
       - name: Print app log on failure
         if: failure()
