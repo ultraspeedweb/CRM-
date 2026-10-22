@@ -11,7 +11,7 @@ export async function authRedirectOrigin(): Promise<string> {
 
   if (candidate) {
     const url = new URL(candidate.startsWith("http") ? candidate : `https://${candidate}`);
-    if (url.protocol !== "https:" && url.hostname !== "localhost") {
+    if (process.env.NODE_ENV !== "development" && (url.protocol !== "https:" || url.hostname === "localhost" || url.hostname === "127.0.0.1")) {
       throw new Error("Auth redirect URL must use HTTPS");
     }
     return url.origin;
