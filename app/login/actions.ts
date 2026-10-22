@@ -1,6 +1,6 @@
 "use server";
 
-import { headers } from "next/headers";
+import { authRedirectOrigin } from "@/lib/auth-redirect-origin";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isStrongEnoughPassword } from "@/lib/validation";
@@ -29,7 +29,7 @@ export async function signUp(formData: FormData) {
     redirect(destination("error", "اكتب اسمك وكلمة مرور من 10 أحرف تحتوي حروفًا وأرقامًا"));
   }
 
-  const origin = (await headers()).get("origin") ?? "http://localhost:3000";
+  const origin = await authRedirectOrigin();
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
     email,
