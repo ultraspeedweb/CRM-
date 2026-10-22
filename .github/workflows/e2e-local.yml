@@ -9,6 +9,8 @@ jobs:
   commercial-flow:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      WEB_INTAKE_SECRET: disposable-local-intake-test-only
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -21,6 +23,18 @@ jobs:
 
       - name: Install exact app dependencies
         run: npm ci
+
+      - name: Isolate Supabase E2E ports from default runner services
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path("supabase/config.toml")
+          source = path.read_text()
+          for old, new in [(54320, 56220), (54321, 56221), (54322, 56222), (54323, 56223), (54324, 56224), (54329, 56229)]:
+              source = source.replace(f"port = {old}", f"port = {new}")
+          path.write_text(source)
+          PY
 
       - name: Start fresh local Supabase
         run: supabase start
@@ -53,7 +67,10 @@ jobs:
         run: npm run build
 
       - name: Install isolated browser runner
-        run: npm install --prefix e2e --package-lock=false
+        run: npm ci --prefix e2e
+
+      - name: Audit isolated browser runner
+        run: npm audit --prefix e2e --audit-level=high
 
       - name: Install Chromium
         run: ./e2e/node_modules/.bin/playwright install --with-deps chromium
@@ -73,7 +90,7 @@ jobs:
           exit 1
 
       - name: Run commercial browser flow
-        run: ./e2e/node_modules/.bin/playwright test e2e/launch-flow.spec.mjs --reporter=line --workers=1
+        run: ./e2e/node_modules/.bin/playwright test e2e/launch-flow.spec.mjs e2e/operational-services.spec.mjs e2e/platform-export-guard.spec.mjs e2e/sovereign-ingress.spec.mjs --reporter=line --workers=1
 
       - name: Print app log on failure
         if: failure()

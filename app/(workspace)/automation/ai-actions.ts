@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireWorkspace } from "@/lib/workspace";
+import { isPlatformServiceEnabled } from "@/lib/platform-service-guard";
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 function destination(kind: "error" | "success", message: string) { return `/automation?${kind}=${encodeURIComponent(message)}`; }
@@ -18,9 +19,10 @@ export async function handoffConversationToHuman(formData: FormData) {
 }
 
 export async function resumeAiConversation(formData: FormData) {
-  const { supabase } = await requireWorkspace();
+  const { supabase, organizationId } = await requireWorkspace();
   const conversationId = String(formData.get("conversationId") ?? "").trim();
   if (!uuid.test(conversationId)) redirect(destination("error", "معرّف المحادثة غير صالح"));
+  if (!await isPlatformServiceEnabled(organizationId, "ai_sales_agent")) redirect(destination("error", "خدمة AI غير معتمدة أو موقوفة مؤقتًا"));
   const rpc = supabase.rpc as unknown as (fn: string, args: Record<string, string>) => Promise<{ data: boolean | null; error: { message: string } | null }>;
   const { data, error } = await rpc("resume_conversation_ai", { p_conversation_id: conversationId });
   if (error || data !== true) redirect(destination("error", "تعذر إعادة المحادثة إلى AI أو لا تملك الصلاحية"));

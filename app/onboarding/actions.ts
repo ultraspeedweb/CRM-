@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getLocale } from "@/lib/i18n";
 
 function onboardingError(message: string) {
   return `/onboarding?error=${encodeURIComponent(message)}`;
@@ -32,15 +33,15 @@ export async function createOrganization(formData: FormData) {
     .maybeSingle();
 
   if (membershipError) redirect(onboardingError("تعذر التحقق من عضوية المؤسسة"));
-  if (existingMembership?.organization_id) redirect("/dashboard");
+  if (existingMembership?.organization_id) redirect("/getting-started");
 
   const { error } = await supabase.from("organization_bootstrap_requests").insert({
     user_id: userId,
     organization_name: name,
     organization_slug: slug,
     member_full_name: fullName,
-    locale: "ar",
+    locale: await getLocale(),
   });
   if (error) redirect(onboardingError(error.code === "23505" ? "لديك مؤسسة بالفعل أو الرابط المختصر مستخدم" : "تعذر تجهيز المؤسسة"));
-  redirect("/dashboard");
+  redirect("/getting-started");
 }

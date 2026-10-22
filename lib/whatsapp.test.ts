@@ -5,6 +5,7 @@ import {
   extractWhatsAppEvents,
   getPhoneNumberIdFromThreadId,
   resolveWhatsAppAccessToken,
+  recipientMatchesWhatsAppThread,
   verifyMetaSignature,
 } from "./whatsapp";
 
@@ -25,6 +26,13 @@ describe("Meta webhook security", () => {
     expect(threadId).toBe("123456:905551112233");
     expect(getPhoneNumberIdFromThreadId(threadId)).toBe("123456");
     expect(getPhoneNumberIdFromThreadId("905551112233")).toBeNull();
+  });
+
+  it("never sends a reply to a different lead than the WhatsApp thread", () => {
+    expect(recipientMatchesWhatsAppThread("123456:905551112233", "+905551112233")).toBe(true);
+    expect(recipientMatchesWhatsAppThread("123456:905551112233", "905551112233")).toBe(true);
+    expect(recipientMatchesWhatsAppThread("123456:905551112233", "+905559998877")).toBe(false);
+    expect(recipientMatchesWhatsAppThread("invalid", "+905551112233")).toBe(false);
   });
 
   it("only resolves dedicated WhatsApp access-token environment keys", () => {

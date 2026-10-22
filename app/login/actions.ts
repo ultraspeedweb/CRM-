@@ -1,9 +1,10 @@
 "use server";
 
-import { headers } from "next/headers";
+import { authRedirectOrigin } from "@/lib/auth-redirect-origin";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isStrongEnoughPassword } from "@/lib/validation";
+import { getLocale } from "@/lib/i18n";
 
 function destination(kind: "error" | "message", value: string) {
   return `/login?${kind}=${encodeURIComponent(value)}`;
@@ -28,14 +29,14 @@ export async function signUp(formData: FormData) {
     redirect(destination("error", "اكتب اسمك وكلمة مرور من 10 أحرف تحتوي حروفًا وأرقامًا"));
   }
 
-  const origin = (await headers()).get("origin") ?? "http://localhost:3000";
+  const origin = await authRedirectOrigin();
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
       emailRedirectTo: `${origin}/auth/confirm?next=/onboarding`,
-      data: { full_name: fullName, preferred_locale: "ar" },
+      data: { full_name: fullName, preferred_locale: await getLocale() },
     },
   });
   if (error) redirect(destination("error", error.message.includes("registered") ? "هذا البريد مستخدم مسبقًا" : "تعذر إنشاء الحساب"));

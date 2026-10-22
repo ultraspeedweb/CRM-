@@ -2,7 +2,6 @@ import "server-only";
 import { createClient } from "@supabase/supabase-js";
 
 export type PlatformServiceKey = "core" | "web_inbox" | "whatsapp" | "ai_sales_agent" | "automations" | "notifications" | "shopify" | "woocommerce";
-type ControlRow = { service_key: string; status: string };
 
 function createControlPlaneClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -12,24 +11,23 @@ function createControlPlaneClient() {
   return createClient(url, secretKey, { auth: { persistSession: false, autoRefreshToken: false } });
 }
 
-/** Fail closed when a configured control cannot be read. Missing rows mean enabled. Core disables every tenant service. */
+/** Uncertified external integrations require a deployment release flag AND an operator enablement. */
 export async function isPlatformServiceEnabled(organizationId: string, serviceKey: PlatformServiceKey): Promise<boolean> {
+  const releaseFlags: Partial<Record<PlatformServiceKey, string>> = {
+    whatsapp: "SATISDESK_WHATSAPP_ENABLED",
+    ai_sales_agent: "SATISDESK_AI_ENABLED",
+    shopify: "SATISDESK_SHOPIFY_ENABLED",
+    woocommerce: "SATISDESK_WOOCOMMERCE_ENABLED",
+  };
+  const flag = releaseFlags[serviceKey];
+  if (flag && process.env[flag] !== "true") return false;
   try {
     const admin = createControlPlaneClient();
-    const { data, error } = await admin
-      .schema("private")
-      .from("platform_service_controls")
-      .select("service_key,status")
-      .eq("organization_id", organizationId)
-      .in("service_key", ["core", serviceKey]);
-    if (error) return false;
-    const controls: ControlRow[] = Array.isArray(data)
-      ? data.filter((row): row is ControlRow => Boolean(row) && typeof row.service_key === "string" && typeof row.status === "string")
-      : [];
-    const core = controls.find((row) => row.service_key === "core");
-    if (core && core.status !== "enabled") return false;
-    const service = controls.find((row) => row.service_key === serviceKey);
-    return !service || service.status === "enabled";
+    const { data, error } = await admin.rpc("is_platform_service_enabled", {
+      p_organization_id: organizationId,
+      p_service_key: serviceKey,
+    });
+    return !error && data === true;
   } catch {
     return false;
   }
