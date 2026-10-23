@@ -1,0 +1,93 @@
+name: Security remediation candidate for PR 31
+on:
+  push:
+    branches: [security/braces-pr31-remediation]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  remediate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: test-publishable-key
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Install trusted ESLint alternative and regenerate lockfile
+        run: |
+          npm uninstall eslint-config-next
+          npm install --save-dev --save-exact @eslint/js typescript-eslint eslint-plugin-react-hooks eslint-plugin-jsx-a11y eslint-plugin-react
+          cat > eslint.config.mjs <<'EOF'
+          import { defineConfig, globalIgnores } from "eslint/config";
+          import js from "@eslint/js";
+          import tseslint from "typescript-eslint";
+          import reactHooks from "eslint-plugin-react-hooks";
+          import jsxA11y from "eslint-plugin-jsx-a11y";
+          import react from "eslint-plugin-react";
+
+          export default defineConfig([
+            js.configs.recommended,
+            ...tseslint.configs.recommended,
+            react.configs.flat.recommended,
+            react.configs.flat["jsx-runtime"],
+            reactHooks.configs.flat.recommended,
+            jsxA11y.flatConfigs.recommended,
+            {
+              files: ["**/*.{js,jsx,ts,tsx,mjs}"],
+              languageOptions: {
+                globals: {
+                  console: "readonly",
+                  process: "readonly",
+                  Buffer: "readonly",
+                  URL: "readonly",
+                  URLSearchParams: "readonly",
+                  Request: "readonly",
+                  Response: "readonly",
+                  Headers: "readonly",
+                  fetch: "readonly",
+                  FormData: "readonly",
+                  setTimeout: "readonly",
+                  clearTimeout: "readonly",
+                  setInterval: "readonly",
+                  clearInterval: "readonly",
+                  window: "readonly",
+                  document: "readonly",
+                  navigator: "readonly",
+                  HTMLElement: "readonly",
+                  HTMLInputElement: "readonly",
+                  localStorage: "readonly",
+                  crypto: "readonly",
+                  AbortController: "readonly",
+                  AbortSignal: "readonly",
+                  structuredClone: "readonly"
+                }
+              }
+            },
+            globalIgnores([".next/**", ".vercel/**", "supabase/.temp/**", "next-env.d.ts"])
+          ]);
+          EOF
+      - name: Enforce no high severity advisories
+        run: npm audit --audit-level=high
+      - name: Verify candidate
+        run: |
+          npm run typecheck
+          npm run lint
+          npm test
+          npm run build
+      - name: Commit only fully verified candidate
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json eslint.config.mjs
+          if ! git diff --cached --quiet; then
+            git commit -m "fix(security): remove vulnerable eslint-config-next dependency chain"
+            git push origin HEAD:security/braces-pr31-remediation
+          fi
