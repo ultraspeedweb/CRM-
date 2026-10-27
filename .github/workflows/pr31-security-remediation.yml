@@ -79,6 +79,8 @@ jobs:
             globalIgnores([".next/**", ".vercel/**", "supabase/.temp/**", "next-env.d.ts"])
           ]);
           EOF
+      - name: Validate reproducible lockfile install
+        run: npm ci
       - name: Enforce no high severity advisories
         run: npm audit --audit-level=high
       - name: Verify candidate
@@ -88,6 +90,7 @@ jobs:
           npm test
           npm run build
       - name: Commit only fully verified candidate
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
