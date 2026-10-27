@@ -3,11 +3,13 @@ on:
   push:
     branches: [security/braces-pr31-remediation]
   workflow_dispatch:
+  pull_request:
+    branches: [main]
 permissions:
   contents: write
 jobs:
   remediate:
-    if: github.actor != 'github-actions[bot]'
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.ref == 'security/braces-pr31-remediation'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
@@ -23,8 +25,11 @@ jobs:
           cache: npm
       - name: Install trusted ESLint alternative and regenerate lockfile
         run: |
+          npm install --save-exact next@16.4.3
+          npm install --save-dev --save-exact vitest@4.1.12
           npm uninstall eslint-config-next
           npm install --save-dev --save-exact @eslint/js typescript-eslint eslint-plugin-react-hooks eslint-plugin-jsx-a11y eslint-plugin-react
+          npm audit fix
           cat > eslint.config.mjs <<'EOF'
           import { defineConfig, globalIgnores } from "eslint/config";
           import js from "@eslint/js";
