@@ -94,5 +94,5 @@ jobs:
           git add package.json package-lock.json eslint.config.mjs
           if ! git diff --cached --quiet; then
             git commit -m "fix(security): remove vulnerable eslint-config-next dependency chain"
-            git push origin HEAD:security/braces-pr31-remediation
+            git push origin HEAD:refs/heads/security/braces-verified-${GITHUB_RUN_ID}
           fi
