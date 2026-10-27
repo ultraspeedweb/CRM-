@@ -1,6 +1,7 @@
 import { Building2, CheckCircle2 } from "lucide-react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { resolveAuthenticatedDestination } from "@/lib/workspace-routing";
 import { createOrganization } from "./actions";
 
 type Props = { searchParams: Promise<{ error?: string }> };
@@ -8,9 +9,12 @@ type Props = { searchParams: Promise<{ error?: string }> };
 export default async function OnboardingPage({ searchParams }: Props) {
   const supabase = await createClient();
   const { data: claims } = await supabase.auth.getClaims();
-  if (!claims?.claims) redirect("/login");
-  const { data: membership } = await supabase.from("organization_members").select("organization_id").limit(1).maybeSingle();
-  if (membership) redirect("/dashboard");
+  const userId = claims?.claims?.sub;
+  if (!userId) redirect("/login");
+
+  const destination = await resolveAuthenticatedDestination(supabase, userId);
+  if (destination !== "/onboarding") redirect(destination);
+
   const params = await searchParams;
 
   return (

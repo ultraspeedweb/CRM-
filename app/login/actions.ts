@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isStrongEnoughPassword } from "@/lib/validation";
+import { resolveAuthenticatedDestination } from "@/lib/workspace-routing";
 
 function destination(kind: "error" | "message", value: string) {
   return `/login?${kind}=${encodeURIComponent(value)}`;
@@ -15,9 +16,17 @@ export async function signIn(formData: FormData) {
   if (!email || password.length < 8) redirect(destination("error", "تأكد من البريد وكلمة المرور"));
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) redirect(destination("error", "بيانات الدخول غير صحيحة"));
-  redirect("/dashboard");
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error || !data.user) redirect(destination("error", "بيانات الدخول غير صحيحة"));
+
+  let resolvedDestination: string;
+  try {
+    resolvedDestination = await resolveAuthenticatedDestination(supabase, data.user.id);
+  } catch {
+    redirect(destination("error", "تعذر تحديد مساحة العمل"));
+  }
+
+  redirect(resolvedDestination);
 }
 
 export async function signUp(formData: FormData) {

@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Building2, CreditCard, Download, ShieldCheck, UsersRound } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { getLocale, localeMeta } from "@/lib/i18n";
 import { PlatformPrintButton } from "./print-button";
 
 export const dynamic = "force-dynamic";
@@ -9,9 +11,19 @@ type Company = { organization_id:string; organization_name:string; created_at:st
 type PlatformRpcClient = { rpc:(name:"get_platform_company_overview")=>Promise<{data:unknown;error:unknown}> };
 function isCompany(value:unknown):value is Company { if(!value||typeof value!=="object") return false; const row=value as Record<string,unknown>; return typeof row.organization_id==="string"&&typeof row.organization_name==="string"&&typeof row.member_count==="number"; }
 
+const accessCopy = {
+ ar: { title: "تعذر فتح لوحة إدارة المنصة", body: "قد لا يملك هذا الحساب صلاحية إدارة المنصة، أو تعذر التحقق من الصلاحية الآن. لم يتم منح أي وصول بديل.", back: "العودة للرئيسية" },
+ tr: { title: "Platform yönetimi açılamadı", body: "Bu hesabın platform yönetim yetkisi olmayabilir veya yetki şu anda doğrulanamadı. Alternatif erişim verilmedi.", back: "Ana sayfaya dön" },
+ en: { title: "Platform control unavailable", body: "This account may not have platform authority, or that authority could not be verified. No fallback access was granted.", back: "Back to home" },
+} as const;
+
 export default async function PlatformPage(){
  const supabase=await createClient(); const {data:{user}}=await supabase.auth.getUser(); if(!user) redirect("/login");
- const {data,error}=await (supabase as unknown as PlatformRpcClient).rpc("get_platform_company_overview"); if(error) redirect("/dashboard");
+ const {data,error}=await (supabase as unknown as PlatformRpcClient).rpc("get_platform_company_overview");
+ if(error){
+  const locale=await getLocale(); const t=accessCopy[locale];
+  return <main className="center-page" dir={localeMeta[locale].dir}><section className="auth-card"><div className="brand-mark">S</div><h1>{t.title}</h1><p className="muted">{t.body}</p><Link className="primary-button" href="/">{t.back}</Link></section></main>;
+ }
  const companies=Array.isArray(data)?data.filter(isCompany):[]; const active=companies.filter(c=>c.subscription_status==="active").length; const trials=companies.filter(c=>c.subscription_status==="trial").length; const seats=companies.reduce((sum,c)=>sum+Number(c.member_count??0),0);
  return <main className="content">
   <div className="page-header"><div><span className="eyebrow">SatışDesk Control Plane</span><h1>Platform Operations</h1><p>Commercial health without exposing tenant customer content.</p></div><div className="header-actions"><a className="secondary-button" href="/platform/export"><Download size={17}/> CSV / Excel</a><PlatformPrintButton/></div></div>
