@@ -28,7 +28,7 @@ jobs:
           npm install --save-exact next@16.4.3
           npm install --save-dev --save-exact vitest@4.1.12
           npm uninstall eslint-config-next
-          npm install --save-dev --save-exact @eslint/js typescript-eslint eslint-plugin-react-hooks eslint-plugin-jsx-a11y eslint-plugin-react
+          npm install --save-dev --save-exact @eslint/js@9.39.5 typescript-eslint eslint-plugin-react-hooks eslint-plugin-jsx-a11y eslint-plugin-react
           npm audit fix
           cat > eslint.config.mjs <<'EOF'
           import { defineConfig, globalIgnores } from "eslint/config";
