@@ -15,3 +15,6 @@ Before changing application code, load `docs/engineering/ENGINEERING_FOUNDATION.
 Use progressive disclosure: load only the skill relevant to the current task. For UI/UX, responsive, accessibility, forms, dashboards, tables or visual changes, also load `docs/engineering/skills/WEB_UI_DESIGN_SKILL.md`. For security-sensitive work, load `docs/security/PROJECT_SECURITY_SHIELD.md`.
 
 Do not claim completion from documentation alone: exact-candidate tests and evidence remain required, and security/auth/tenant/payment/migration/production work requires independent verification where the foundation specifies it.
+
+## Project memory and agent coordination
+Before planning a change or starting a multi-agent task, read `docs/engineering/PROJECT_CONSTITUTION.md` and use `.agents/skills/project-memory-governance/SKILL.md`. Preserve project identity, NOW/NEXT/LATER scope and architectural decisions in `docs/engineering/decisions/`. Treat old plans as historical until verified at the current commit and runtime. A skill or plan does not prove implementation. No cross-project database/credential reuse, automatic merge, or production change; staging writes require verified target and explicit scoped authorization. Existing stricter project engineering rules remain in force.
