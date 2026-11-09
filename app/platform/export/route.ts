@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { platformCsvCell, platformLoginRedirect } from "@/lib/platform-export";
 
 export const dynamic = "force-dynamic";
 
@@ -18,15 +19,10 @@ type PlatformRpcClient = {
   rpc: (name: "get_platform_company_overview") => Promise<{ data: unknown; error: unknown }>;
 };
 
-function csvCell(value: unknown) {
-  const text = String(value ?? "").replace(/"/g, '""');
-  return `"${text}"`;
-}
-
-export async function GET() {
+export async function GET(request: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.redirect(new URL("/login", "https://satisdesk.com"));
+  if (!user) return NextResponse.redirect(platformLoginRedirect(request.url));
 
   const { data, error } = await (supabase as unknown as PlatformRpcClient).rpc("get_platform_company_overview");
   if (error || !Array.isArray(data)) return new NextResponse("Forbidden", { status: 403 });
@@ -36,7 +32,7 @@ export async function GET() {
     ["Company", "Created", "Plan", "Status", "Active seats", "Included seats", "Billing"],
     ...companies.map((c) => [c.organization_name, c.created_at, c.plan_id, c.subscription_status, c.member_count, c.included_users, c.billing_cycle]),
   ];
-  const csv = "\uFEFF" + rows.map((row) => row.map(csvCell).join(",")).join("\r\n");
+  const csv = "\uFEFF" + rows.map((row) => row.map(platformCsvCell).join(",")).join("\r\n");
 
   return new NextResponse(csv, {
     headers: {
