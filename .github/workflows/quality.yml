@@ -18,6 +18,11 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - run: npm ci
-      - run: npm audit --audit-level=high
-      - run: npm run verify
+      - name: Install exact dependencies
+        id: install
+        run: npm ci
+      - name: Security dependency audit (blocking)
+        run: npm audit --audit-level=high
+      - name: Typecheck, lint, tests and build (diagnostic even when audit fails)
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: npm run verify
