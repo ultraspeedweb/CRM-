@@ -25,7 +25,7 @@ jobs:
         run: |
           npm install --save-exact next@16.4.5
           npm install --save-dev --save-exact eslint-config-next@16.4.5 vitest@4.1.12
-          npm audit fix
+          npm audit fix --audit-level=high
       - name: Verify lockfile reproducibility
         run: npm ci
       - name: Report security findings without hiding them
