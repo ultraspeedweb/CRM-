@@ -8,7 +8,7 @@ on:
       - .github/workflows/branch-dependency-remediation.yml
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   prepare-and-verify:
@@ -32,6 +32,16 @@ jobs:
         run: npm audit --audit-level=high
       - name: Verify typecheck, lint, unit and build
         run: npm run verify
+      - name: Commit verified dependency manifests to this review branch (no force)
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- package.json package-lock.json
+          if git diff --cached --quiet; then
+            echo 'No dependency changes to commit'; exit 0
+          fi
+          git commit -m 'fix(deps): pin patched compatible packages and regenerate lockfile'
+          git push origin HEAD:refs/heads/fix/safe-commercial-preflight-20261109
       - name: Upload patched manifest and lockfile for controlled review
         if: always()
         uses: actions/upload-artifact@v4
