@@ -1,0 +1,43 @@
+name: One-time dependency remediation (review branch only)
+
+on:
+  push:
+    branches:
+      - fix/safe-commercial-preflight-20261109
+    paths:
+      - .github/workflows/branch-dependency-remediation.yml
+
+permissions:
+  contents: read
+
+jobs:
+  prepare-and-verify:
+    if: github.repository == 'ultraspeedweb/CRM-' && github.ref == 'refs/heads/fix/safe-commercial-preflight-20261109'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install patched major-compatible pinned dependencies and rebuild lockfile
+        run: |
+          npm install --save-exact next@16.4.5
+          npm install --save-dev --save-exact eslint-config-next@16.4.5 vitest@4.1.12
+          npm audit fix
+      - name: Verify lockfile reproducibility
+        run: npm ci
+      - name: Report security findings without hiding them
+        run: npm audit --audit-level=high
+      - name: Verify typecheck, lint, unit and build
+        run: npm run verify
+      - name: Upload patched manifest and lockfile for controlled review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: patched-dependency-manifests
+          path: |
+            package.json
+            package-lock.json
+          retention-days: 7
