@@ -1,9 +1,8 @@
 name: One-time dependency remediation (review branch only)
 
 on:
-  push:
-    branches:
-      - fix/safe-commercial-preflight-20261109
+  pull_request:
+    branches: [main]
     paths:
       - .github/workflows/branch-dependency-remediation.yml
 
@@ -12,11 +11,13 @@ permissions:
 
 jobs:
   prepare-and-verify:
-    if: github.repository == 'ultraspeedweb/CRM-' && github.ref == 'refs/heads/fix/safe-commercial-preflight-20261109'
+    if: github.repository == 'ultraspeedweb/CRM-' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/safe-commercial-preflight-20261109'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: fix/safe-commercial-preflight-20261109
       - uses: actions/setup-node@v4
         with:
           node-version: 24
